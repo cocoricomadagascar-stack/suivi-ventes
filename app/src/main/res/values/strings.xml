@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Suivi Ventes</string>
+
+    <!--
+        🔧 REMPLACE l'adresse ci-dessous par le lien de TON Google Sheet
+        (ouvre ton fichier dans Chrome, copie le lien depuis la barre d'adresse).
+        Astuce : ajoute "#gid=XXXX" à la fin pour ouvrir directement sur l'onglet Saisie
+        (le numéro se trouve dans le lien quand tu es sur cet onglet dans Chrome).
+    -->
+    <string name="target_url">https://docs.google.com/spreadsheets/d/1l7v2F9o0g1reoVT-cCb-r4_v3bmHqjHq/edit?gid=908371144#gid=908371144</string>
+</resources>

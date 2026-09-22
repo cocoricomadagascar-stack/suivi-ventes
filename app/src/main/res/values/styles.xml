@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SuiviVentes" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#16332B</item>
+        <item name="colorPrimaryDark">#0F221D</item>
+        <item name="colorAccent">#E0A93B</item>
+        <item name="android:windowBackground">#0F221D</item>
+    </style>
+</resources>
