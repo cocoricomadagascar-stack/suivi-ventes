@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FFC72C">
+<title>Cash Point</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --jaune:#FFC72C; --noir:#1C1A17; --chaux:#FFFDF6; --gris:#6B665C; --ligne:#E8E0C8;
+    --rouge:#E4002B; --orange:#FF7900; --vert:#0B8F3C; --bleu:#2E3192;
+    --ok:#0B8F3C; --alerte:#B3261E;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    background:var(--jaune); color:var(--noir); font-size:16px; line-height:1.4;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    -webkit-tap-highlight-color:transparent;
+  }
+  body.bloque{overflow:hidden}
+  button,input,select{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:3px solid var(--bleu);outline-offset:2px}
+  [hidden]{display:none!important}
+
+  /* ---------- Enseigne (le mur du cash point) ---------- */
+  .enseigne{padding:calc(14px + env(safe-area-inset-top,0px)) 16px 0; max-width:620px; margin:0 auto}
+  .enseigne-ligne{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .logo{font-family:'Black Ops One',Impact,'Arial Black',sans-serif;font-size:2rem;line-height:1;margin:0;letter-spacing:.01em}
+  .qui{font-size:.9rem;font-weight:600;margin:4px 0 0}
+  .btn-quitter{background:transparent;border:2px solid var(--noir);border-radius:6px;padding:6px 12px;font-weight:700;font-size:.85rem}
+  .bande{display:grid;grid-template-columns:1.1fr 1fr .8fr 1fr;height:10px;margin:12px 0 0;border-radius:2px;overflow:hidden}
+  .bande span:nth-child(1){background:var(--rouge)}
+  .bande span:nth-child(2){background:var(--noir)}
+  .bande span:nth-child(3){background:var(--bleu)}
+  .bande span:nth-child(4){background:var(--vert)}
+
+  main{max-width:620px;margin:0 auto;padding:14px 14px 40px}
+
+  /* ---------- Connexion ---------- */
+  .ecran-login{min-height:100vh;display:flex;flex-direction:column}
+  .ecran-login .enseigne{padding-top:calc(48px + env(safe-area-inset-top,0px))}
+  .ecran-login .logo{font-size:3rem}
+  .ecran-login .qui{font-size:1rem;font-weight:500}
+  .login-panneau{background:var(--chaux);border-radius:10px;padding:22px 18px;margin-top:28px;border:2px solid var(--noir)}
+  .login-panneau h2{margin:0 0 14px;font-size:1.25rem}
+  .erreur-login{color:var(--alerte);font-weight:600;min-height:1.4em;margin:8px 0 0}
+
+  /* ---------- Formulaires ---------- */
+  label{display:block;font-weight:600;font-size:.92rem;margin:12px 0 0}
+  input,select{display:block;width:100%;min-height:50px;margin-top:6px;padding:10px 12px;border:2px solid #CFC6AC;border-radius:8px;background:#fff;font-size:1.1rem}
+  input:focus,select:focus{border-color:var(--noir);outline:none}
+  .aide{font-size:.85rem;color:var(--gris);margin:4px 0 0;font-weight:400}
+  .principal{display:block;width:100%;min-height:54px;margin-top:18px;border:0;border-radius:8px;background:var(--noir);color:var(--jaune);font-weight:800;font-size:1.1rem}
+  .principal:disabled{opacity:.5}
+  .secondaire{display:block;width:100%;min-height:48px;margin-top:10px;border:2px solid var(--noir);border-radius:8px;background:transparent;font-weight:700}
+  .petit-btn{border:2px solid var(--noir);background:#fff;border-radius:6px;padding:7px 10px;font-weight:700;font-size:.85rem}
+  .petit-btn.danger{border-color:var(--alerte);color:var(--alerte)}
+  .petit-btn.plein{background:var(--noir);color:var(--jaune)}
+
+  /* ---------- Soldes (tuiles peintes) ---------- */
+  .soldes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tuile{border-radius:8px;padding:10px 12px;min-height:76px;display:flex;flex-direction:column;justify-content:space-between}
+  .t-nom{font-size:.85rem;font-weight:700}
+  .t-val{font-size:1.25rem;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .t-val.neg{text-decoration:underline wavy}
+  .t-especes{background:var(--chaux);border:2px solid var(--noir)}
+  .t-mvola{background:var(--vert);color:#fff}
+  .t-orange{background:var(--noir);color:var(--orange)}
+  .t-airtel{background:var(--rouge);color:#fff}
+  .tuile.petit{min-height:58px;padding:8px 10px}
+  .tuile.petit .t-val{font-size:1rem}
+
+  /* ---------- Boutons d'opération ---------- */
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+  .act{min-height:64px;border:0;border-radius:8px;background:var(--noir);color:var(--chaux);font-weight:800;font-size:1.05rem;text-align:left;padding:10px 14px;display:flex;flex-direction:column;justify-content:center}
+  .act small{font-weight:500;font-size:.78rem;color:#CFC6AC;margin-top:2px}
+  .act.large{grid-column:1 / -1}
+  .act.cloture{background:transparent;color:var(--noir);border:2px solid var(--noir)}
+  .act.cloture small{color:var(--gris)}
+
+  /* ---------- Panneaux / journal ---------- */
+  .panneau{background:var(--chaux);border-radius:10px;padding:14px;margin-top:14px}
+  .panneau h2{font-size:1.15rem;margin:0}
+  .panneau-tete{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .panneau-tete span{font-size:.88rem;color:var(--gris)}
+  .vide{color:var(--gris);margin:10px 0 2px}
+  .op{display:grid;grid-template-columns:6px 1fr auto;gap:10px;padding:10px 0;border-top:1px solid var(--ligne)}
+  .op:first-of-type{border-top:0}
+  .op-barre{border-radius:3px}
+  .c-mvola{background:var(--vert)} .c-orange{background:var(--orange)} .c-airtel{background:var(--rouge)} .c-especes{background:var(--noir)}
+  .op-titre{font-weight:700}
+  .op-detail{font-size:.85rem;color:var(--gris);word-break:break-word}
+  .op-droite{text-align:right}
+  .op-montant{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .op-heure{font-size:.8rem;color:var(--gris)}
+  .op-actions{grid-column:2 / -1;display:flex;gap:8px;flex-wrap:wrap}
+  .badge{display:inline-block;font-size:.75rem;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px;vertical-align:1px}
+  .b-attente{background:#EDE6D0;color:var(--gris)}
+  .b-demande{background:#FFE3B3;color:#7A4A00}
+  .b-annulee{background:#F6D4D1;color:var(--alerte)}
+  .op.annulee .op-titre,.op.annulee .op-montant{text-decoration:line-through;opacity:.6}
+
+  .alerte{background:var(--chaux);border-left:6px solid var(--alerte);border-radius:6px;padding:10px 12px;margin:12px 0 0;font-weight:600;font-size:.92rem}
+  .info{background:var(--chaux);border-left:6px solid var(--bleu);border-radius:6px;padding:10px 12px;margin:12px 0 0;font-size:.92rem}
+
+  /* ---------- Patron ---------- */
+  .onglets{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+  .onglet{flex:0 0 auto;border:2px solid var(--noir);background:transparent;border-radius:999px;padding:8px 14px;font-weight:700}
+  .onglet[aria-selected="true"]{background:var(--noir);color:var(--jaune)}
+  .point-carte h2{font-size:1.3rem}
+  .chiffres{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0 4px;font-size:.92rem}
+  .chiffres b{font-size:1.05rem}
+  .rangee-btn{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:6px 6px;border-top:1px solid var(--ligne);font-size:.9rem;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{border-top:0;font-size:.8rem;color:var(--gris);font-weight:700}
+  .ecart-neg{color:var(--alerte);font-weight:800}
+  .ecart-pos{color:#7A4A00;font-weight:800}
+  .defil{overflow-x:auto}
+  .tarifs input{min-height:40px;font-size:.95rem;padding:6px 8px;min-width:90px;margin:0}
+  .tarifs td{padding:4px}
+
+  /* ---------- Feuille (formulaire qui monte du bas) ---------- */
+  .voile{position:fixed;inset:0;background:rgba(28,26,23,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+  .feuille{background:var(--chaux);width:100%;max-width:620px;max-height:92vh;overflow-y:auto;border-radius:14px 14px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom,0px));animation:monte .18s ease-out}
+  @keyframes monte{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+  @media (prefers-reduced-motion:reduce){.feuille{animation:none}}
+  .feuille-tete{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .feuille h2{margin:0;font-size:1.35rem}
+  .fermer{border:0;background:transparent;font-size:1.6rem;line-height:1;padding:4px 8px}
+  .choix{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+  .choix.deux{grid-template-columns:1fr 1fr}
+  .choix input{position:absolute;opacity:0;width:1px;height:1px;min-height:0;margin:0}
+  .choix label{margin:0}
+  .choix span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;border-radius:8px;border:3px solid transparent;font-weight:800;font-size:.95rem;padding:4px;opacity:.55}
+  .choix input:checked + span{opacity:1;border-color:var(--noir);box-shadow:0 0 0 2px var(--chaux) inset}
+  .choix input:focus-visible + span{outline:3px solid var(--bleu);outline-offset:2px}
+  .s-mvola{background:var(--vert);color:#fff}
+  .s-orange{background:var(--noir);color:var(--orange)}
+  .s-airtel{background:var(--rouge);color:#fff}
+  .s-neutre{background:#fff;border-color:#CFC6AC!important;color:var(--noir)}
+  .calcul{background:#fff;border:2px dashed #CFC6AC;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:.95rem}
+  .calcul b{font-size:1.15rem}
+  .calcul.erreur{border-color:var(--alerte);color:var(--alerte);font-weight:700}
+
+  /* ---------- Messages ---------- */
+  .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--noir);color:var(--chaux);padding:12px 16px;border-radius:8px;font-weight:600;z-index:40;max-width:92vw;text-align:center}
+  .toast.err{background:var(--alerte);color:#fff}
+  .bandeau-erreur{background:var(--alerte);color:#fff;padding:10px 14px;font-size:.85rem;word-break:break-word}
+  .bandeau-erreur button{background:#fff;color:var(--alerte);border:0;border-radius:4px;padding:2px 8px;margin-left:6px;font-weight:700}
+  .chargement{text-align:center;padding:40px 0;font-weight:700}
+</style>
+</head>
+<body>
+
+<div id="bandeau-erreur" class="bandeau-erreur" hidden></div>
+
+<!-- ================= Connexion ================= -->
+<div id="ecran-login" class="ecran-login" hidden>
+  <header class="enseigne">
+    <h1 class="logo">CASH POINT</h1>
+    <p class="qui">MVola, Orange Money, Airtel Money</p>
+    <div class="bande" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  </header>
+  <main>
+    <form id="form-login" class="login-panneau" autocomplete="on">
+      <h2>Connexion</h2>
+      <label for="login-id">Identifiant
+        <input id="login-id" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="ex. caisse1" required>
+      </label>
+      <label for="login-mdp">Mot de passe
+        <input id="login-mdp" type="password" required>
+      </label>
+      <button class="principal" id="btn-login" type="submit">Se connecter</button>
+      <p class="erreur-login" id="login-err" role="alert"></p>
+    </form>
+  </main>
+</div>
+
+<!-- ================= Application ================= -->
+<div id="ecran-app" hidden>
+  <header class="enseigne">
+    <div class="enseigne-ligne">
+      <div>
+        <h1 class="logo">CASH POINT</h1>
+        <p class="qui" id="qui"></p>
+      </div>
+      <button class="btn-quitter" id="btn-quitter" type="button">Se déconnecter</button>
+    </div>
+    <div class="bande" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  </header>
+  <main id="vue"><p class="chargement">Chargement…</p></main>
+</div>
+
+<div id="voile" class="voile" hidden>
+  <div class="feuille" role="dialog" aria-modal="true" id="feuille"></div>
+</div>
+
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, collection, addDoc, doc, setDoc, updateDoc, getDocs, query, where, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* ================= Configuration Firebase ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyDEco5xoCJpJptRHhXbIaUcQsxg2C_4R9I",
+  authDomain: "suivi-ventes-27dc5.firebaseapp.com",
+  projectId: "suivi-ventes-27dc5",
+  storageBucket: "suivi-ventes-27dc5.firebasestorage.app",
+  messagingSenderId: "735607008395",
+  appId: "1:735607008395:web:1145cd5fc402183c32b88e"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+let db;
+try { db = initializeFirestore(app, { localCache: persistentLocalCache() }); }
+catch (e) { db = initializeFirestore(app, {}); }
+
+/* ================= Constantes ================= */
+const DOMAINE = "@cashpoint.app";
+const OPERATEURS = { mvola: "MVola", orange: "Orange Money", airtel: "Airtel Money" };
+const COMPTES = { especes: "Espèces", mvola: "MVola", orange: "Orange Money", airtel: "Airtel Money" };
+const CLES = ["especes", "mvola", "orange", "airtel"];
+const TYPES = { depot: "Dépôt", transfert: "Transfert", retrait: "Retrait", echange: "Échange", mouvement: "Entrée / sortie" };
+
+// Grille lue sur la photo. Le patron peut la corriger dans l'onglet Tarifs.
+const TARIFS_DEFAUT = [
+  [1001,5000,100,140,500],[5001,10000,200,275,1000],[10001,20000,400,550,1500],
+  [20001,30000,600,1300,3000],[30001,40000,800,1300,4000],[40001,50000,1000,1300,4200],
+  [50001,60000,1200,1900,5000],[60001,70000,1400,1900,5200],[70001,80000,1600,1900,5400],
+  [80001,90000,1800,1900,5600],[90001,100000,2000,1900,7000],[100001,200000,4000,3400,10000],
+  [200001,300000,6000,4700,15000],[300001,400000,8000,4700,17000],[400001,500000,10000,4700,19000],
+  [500001,600000,12000,8800,29000],[600001,700000,14000,8800,31000],[700001,800000,16000,8800,33000],
+  [800001,900000,18000,8800,35000],[900001,1000000,15000,8800,37000],[1000001,2000000,35000,14700,55000],
+  [2000001,3000000,55000,19600,85000],[3000001,4000000,75000,24500,105000],[4000001,5000000,95000,29400,145000],
+  [5000001,6000000,115000,34300,175000],[6000001,7000000,135000,39200,195000],[7000001,8000000,155000,44100,235000],
+  [8000001,9000000,175000,49000,255000],[9000001,10000000,195000,53900,295000]
+].map(([min,max,depot,transfert,retrait]) => ({ min, max, depot, transfert, retrait }));
+
+/* ================= État ================= */
+const S = {
+  role: null, point: null, user: "",
+  tarifs: TARIFS_DEFAUT,
+  noms: { p1: "Point de vente 1", p2: "Point de vente 2" },
+  soldes: { p1: null, p2: null },
+  ops: { p1: [], p2: [] },
+  clotures: [],
+  onglet: "tableau",
+  journal: { point: "p1", jour: null, ops: null },
+  abonnements: [],
+  jourCourant: null
+};
+
+/* ================= Outils ================= */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const nombre = (v) => { const n = parseInt(String(v ?? "").replace(/[^\d]/g, ""), 10); return isNaN(n) ? 0 : n; };
+const fmt = (n) => { const v = Math.round(Number(n) || 0); return (v < 0 ? "-" : "") + Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " Ar"; };
+const ms = (t) => (t && typeof t.toMillis === "function") ? t.toMillis() : 0;
+function jourDe(d) { const x = d || new Date(); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); }
+function heure(m) { return new Date(m).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); }
+function dateLisible(j) { const [a, m, d] = j.split("-"); return d + "/" + m + "/" + a; }
+
+let minuterieToast;
+function toast(msg, err) {
+  const t = $("#toast"); t.textContent = msg; t.className = "toast" + (err ? " err" : ""); t.hidden = false;
+  clearTimeout(minuterieToast); minuterieToast = setTimeout(() => { t.hidden = true; }, err ? 6000 : 3000);
+}
+function erreur(e) {
+  console.error(e);
+  const b = $("#bandeau-erreur");
+  b.innerHTML = "Erreur : " + esc((e && e.code ? e.code + " " : "") + (e && e.message ? e.message : e)) + ' <button type="button" id="fermer-erreur">OK</button>';
+  b.hidden = false;
+  $("#fermer-erreur").onclick = () => { b.hidden = true; };
+}
+
+function fraisPour(type, montant) {
+  if (!["depot", "transfert", "retrait"].includes(type)) return 0;
+  const l = S.tarifs.find((t) => montant >= Number(t.min) && montant <= Number(t.max));
+  return l ? (Number(l[type]) || 0) : null;
+}
+
+// Effet d'une opération sur les 4 soldes du point de vente
+function effets(op) {
+  const e = { especes: 0, mvola: 0, orange: 0, airtel: 0 };
+  const m = Number(op.montant) || 0, f = Number(op.frais) || 0;
+  switch (op.type) {
+    case "depot":
+    case "transfert": e[op.operateur] -= m; e.especes += m + f; break;
+    case "retrait":   e[op.operateur] += m; e.especes += f - m; break;
+    case "echange":   e[op.de] -= m; e[op.vers] += m; break;
+    case "mouvement": e[op.compte] += (op.sens === "entree" ? m : -m); break;
+  }
+  return e;
+}
+
+function soldesActuels(p) {
+  const ref = S.soldes[p] || {};
+  const r = {}; CLES.forEach((k) => { r[k] = Number(ref[k]) || 0; });
+  const depuis = ms(ref.depuis);
+  for (const op of S.ops[p]) {
+    if (op.statut === "annulee" || op._ms <= depuis) continue;
+    const e = effets(op); CLES.forEach((k) => { r[k] += e[k]; });
+  }
+  return r;
+}
+
+function joursSuivis(p) {
+  const ref = S.soldes[p];
+  const auj = new Date();
+  let d = ref && ref.depuis ? new Date(ms(ref.depuis)) : new Date(auj);
+  const min = new Date(auj); min.setDate(min.getDate() - 29);
+  if (d < min) d = min;
+  const c = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const out = [];
+  while (c <= auj && out.length < 30) { out.push(jourDe(c)); c.setDate(c.getDate() + 1); }
+  if (!out.includes(jourDe())) out.push(jourDe());
+  return out;
+}
+
+/* ================= Abonnements temps réel ================= */
+function arreterTout() { S.abonnements.forEach((f) => { try { f(); } catch (e) {} }); S.abonnements = []; }
+
+function suivreConfig() {
+  S.abonnements.push(onSnapshot(doc(db, "config", "tarifs"), (s) => {
+    const l = s.exists() ? s.data().lignes : null;
+    S.tarifs = Array.isArray(l) && l.length ? l : TARIFS_DEFAUT; rendre();
+  }, erreur));
+  S.abonnements.push(onSnapshot(doc(db, "config", "reglages"), (s) => {
+    const d = s.exists() ? s.data() : {};
+    S.noms = { p1: d.nomP1 || "Point de vente 1", p2: d.nomP2 || "Point de vente 2" }; rendre();
+  }, erreur));
+}
+
+function suivrePoint(p) {
+  let arretOps = null, cle = "";
+  const arretSoldes = onSnapshot(doc(db, "soldes", p), (snap) => {
+    S.soldes[p] = snap.exists() ? snap.data() : null;
+    const jours = joursSuivis(p), nouvelle = jours.join(",");
+    if (nouvelle !== cle) {
+      cle = nouvelle; if (arretOps) arretOps();
+      arretOps = onSnapshot(query(collection(db, "operations"), where("point", "==", p), where("jour", "in", jours)), (qs) => {
+        S.ops[p] = qs.docs.map((d) => {
+          const x = d.data({ serverTimestamps: "estimate" });
+          x.id = d.id; x._ms = ms(x.date) || x.localMs || Date.now(); x._attente = d.metadata.hasPendingWrites;
+          return x;
+        }).sort((a, b) => b._ms - a._ms);
+        rendre();
+      }, erreur);
+    }
+    rendre();
+  }, erreur);
+  S.abonnements.push(() => { arretSoldes(); if (arretOps) arretOps(); });
+}
+
+function suivreClotures() {
+  S.abonnements.push(onSnapshot(query(collection(db, "clotures"), where("statut", "==", "a_valider")), (qs) => {
+    S.clotures = qs.docs.map((d) => { const x = d.data({ serverTimestamps: "estimate" }); x.id = d.id; x._ms = ms(x.date); return x; })
+      .sort((a, b) => b._ms - a._ms);
+    rendre();
+  }, erreur));
+}
+
+/* ================= Connexion ================= */
+$("#form-login").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const id = $("#login-id").value.trim().toLowerCase().replace(/\s+/g, "");
+  const mdp = $("#login-mdp").value;
+  const btn = $("#btn-login"); btn.disabled = true; $("#login-err").textContent = "";
+  try {
+    await signInWithEmailAndPassword(auth, id + DOMAINE, mdp);
+  } catch (e) {
+    const c = e.code || "";
+    $("#login-err").textContent =
+      (c.includes("invalid") || c.includes("wrong-password") || c.includes("user-not-found")) ? "Identifiant ou mot de passe incorrect." :
+      c.includes("network") ? "Pas de connexion internet. Vérifiez la connexion puis réessayez." :
+      c.includes("too-many") ? "Trop d'essais. Attendez quelques minutes puis réessayez." :
+      "Connexion impossible (" + c + ").";
+  } finally { btn.disabled = false; }
+});
+
+$("#btn-quitter").addEventListener("click", () => { if (confirm("Se déconnecter ?")) signOut(auth); });
+
+onAuthStateChanged(auth, (u) => {
+  arreterTout(); fermer();
+  if (!u) { $("#ecran-app").hidden = true; $("#ecran-login").hidden = false; return; }
+  const email = (u.email || "").toLowerCase();
+  if (email === "patron" + DOMAINE) { S.role = "patron"; S.point = null; }
+  else if (email === "caisse1" + DOMAINE) { S.role = "caisse"; S.point = "p1"; }
+  else if (email === "caisse2" + DOMAINE) { S.role = "caisse"; S.point = "p2"; }
+  else { toast("Ce compte n'est pas reconnu par l'application.", true); signOut(auth); return; }
+  S.user = email.split("@")[0];
+  S.jourCourant = jourDe();
+  $("#ecran-login").hidden = true; $("#ecran-app").hidden = false;
+  suivreConfig();
+  if (S.role === "patron") { suivrePoint("p1"); suivrePoint("p2"); suivreClotures(); }
+  else { suivrePoint(S.point); }
+  rendre();
+});
+
+// Au changement de jour (application restée ouverte après minuit), on recharge.
+setInterval(() => { if (S.jourCourant && jourDe() !== S.jourCourant) location.reload(); }, 60000);
+
+/* ================= Rendu commun ================= */
+function tuiles(s, petit) {
+  return CLES.map((k) => `<div class="tuile t-${k}${petit ? " petit" : ""}"><span class="t-nom">${COMPTES[k]}</span><strong class="t-val${s[k] < 0 ? " neg" : ""}">${fmt(s[k])}</strong></div>`).join("");
+}
+
+function couleurOp(o) {
+  if (o.operateur) return o.operateur;
+  if (o.type === "echange") return o.vers;
+  return o.compte || "especes";
+}
+
+function ligneOp(o, mode) {
+  let titre = "", detail = "";
+  if (["depot", "transfert", "retrait"].includes(o.type)) {
+    titre = TYPES[o.type] + " " + OPERATEURS[o.operateur];
+    detail = [o.tel, o.client, o.reference ? "Réf. " + o.reference : "", o.frais ? "frais " + fmt(o.frais) : ""].filter(Boolean).join(", ");
+  } else if (o.type === "echange") {
+    titre = "Échange " + COMPTES[o.de] + " vers " + COMPTES[o.vers];
+    detail = o.motif || "";
+  } else {
+    titre = (o.sens === "entree" ? "Entrée " : "Sortie ") + COMPTES[o.compte];
+    detail = o.motif || "";
+  }
+  if (mode === "patron-tout") detail = [detail, "par " + o.caissier].filter(Boolean).join(", ");
+  let badge = "";
+  if (o.statut === "annulation_demandee") badge = `<span class="badge b-demande">annulation demandée</span>`;
+  else if (o.statut === "annulee") badge = `<span class="badge b-annulee">annulée</span>`;
+  else if (o._attente) badge = `<span class="badge b-attente">en attente d'envoi</span>`;
+  let actions = "";
+  if (mode === "caisse" && o.statut === "valide") {
+    actions = `<div class="op-actions"><button class="petit-btn" data-demander-annul="${o.id}">Demander l'annulation</button></div>`;
+  }
+  if (mode === "patron" && o.statut === "annulation_demandee") {
+    actions = `<div class="op-actions"><span class="op-detail">Motif : ${esc(o.motifAnnulation)}</span>
+      <button class="petit-btn danger" data-annuler="${o.id}">Annuler l'opération</button>
+      <button class="petit-btn" data-refuser="${o.id}">Refuser</button></div>`;
+  }
+  return `<div class="op${o.statut === "annulee" ? " annulee" : ""}">
+    <span class="op-barre c-${couleurOp(o)}"></span>
+    <div><div class="op-titre">${esc(titre)}${badge}</div><div class="op-detail">${esc(detail)}</div></div>
+    <div class="op-droite"><div class="op-montant">${fmt(o.montant)}</div><div class="op-heure">${heure(o._ms)}</div></div>
+    ${actions}
+  </div>`;
+}
+
+function resume(ops) {
+  const valides = ops.filter((o) => o.statut !== "annulee");
+  return { nb: valides.length, frais: valides.reduce((a, o) => a + (Number(o.frais) || 0), 0) };
+}
+
+function rendre() {
+  if (!S.role) return;
+  if (S.role === "caisse") rendreCaisse(); else rendrePatron();
+}
+
+/* ================= Écran caissier ================= */
+function rendreCaisse() {
+  const p = S.point, s = soldesActuels(p), auj = jourDe();
+  $("#qui").textContent = S.noms[p] + ", " + S.user;
+  const opsAuj = S.ops[p].filter((o) => o.jour === auj), r = resume(opsAuj);
+  $("#vue").innerHTML = `
+    <section class="soldes" aria-label="Soldes actuels">${tuiles(s)}</section>
+    ${S.soldes[p] ? "" : `<p class="alerte">Le patron n'a pas encore fixé les soldes de départ de ce point. Les soldes partent de zéro.</p>`}
+    <section class="actions">
+      <button class="act" data-form="depot">Dépôt<small>le client verse, vous envoyez</small></button>
+      <button class="act" data-form="transfert">Transfert<small>envoi vers un tiers</small></button>
+      <button class="act" data-form="retrait">Retrait<small>le client reçoit des espèces</small></button>
+      <button class="act" data-form="echange">Échange<small>espèces et puces</small></button>
+      <button class="act large" data-form="mouvement">Entrée / sortie d'argent<small>apport, dépense, prélèvement</small></button>
+      <button class="act large cloture" data-form="cloture">Clôturer la journée<small>compter la caisse et les puces</small></button>
+    </section>
+    <section class="panneau">
+      <div class="panneau-tete"><h2>Aujourd'hui</h2><span>${r.nb} opération${r.nb > 1 ? "s" : ""}, ${fmt(r.frais)} de frais</span></div>
+      ${opsAuj.length ? opsAuj.map((o) => ligneOp(o, "caisse")).join("") : `<p class="vide">Aucune opération aujourd'hui. Touchez Dépôt, Transfert ou Retrait pour commencer.</p>`}
+    </section>`;
+}
+
+/* ================= Écran patron ================= */
+function rendrePatron() {
+  $("#qui").textContent = "Patron";
+  const onglets = [["tableau", "Tableau de bord"], ["journal", "Journal"], ["tarifs", "Tarifs"], ["reglages", "Réglages"]];
+  let corps = "";
+  if (S.onglet === "tableau") corps = vueTableau();
+  else if (S.onglet === "journal") corps = vueJournal();
+  else if (S.onglet === "tarifs") corps = vueTarifs();
+  else corps = vueReglages();
+  // Ne pas redessiner l'onglet Tarifs pendant la saisie
+  if (S.onglet === "tarifs" && document.querySelector(".tarifs") && document.activeElement && document.activeElement.closest(".tarifs")) return;
+  $("#vue").innerHTML = `<nav class="onglets" role="tablist">${onglets.map(([k, t]) => `<button class="onglet" role="tab" aria-selected="${S.onglet === k}" data-onglet="${k}">${t}</button>`).join("")}</nav>${corps}`;
+}
+
+function vueTableau() {
+  const auj = jourDe();
+  let html = "";
+  const demandes = [];
+  ["p1", "p2"].forEach((p) => {
+    const s = soldesActuels(p), opsAuj = S.ops[p].filter((o) => o.jour === auj), r = resume(opsAuj);
+    S.ops[p].filter((o) => o.statut === "annulation_demandee").forEach((o) => demandes.push(o));
+    html += `<section class="panneau point-carte">
+      <h2>${esc(S.noms[p])}</h2>
+      <div class="chiffres"><span><b>${r.nb}</b> opérations aujourd'hui</span><span><b>${fmt(r.frais)}</b> de frais</span></div>
+      <div class="soldes">${tuiles(s, true)}</div>
+      ${S.soldes[p] ? "" : `<p class="alerte">Soldes de départ non fixés. Touchez « Fixer les soldes ».</p>`}
+      <div class="rangee-btn">
+        <button class="petit-btn plein" data-voir-journal="${p}">Voir le journal</button>
+        <button class="petit-btn" data-fixer="${p}">Fixer les soldes</button>
+      </div>
+    </section>`;
+  });
+
+  html += `<section class="panneau"><div class="panneau-tete"><h2>Clôtures à vérifier</h2><span>${S.clotures.length}</span></div>`;
+  if (!S.clotures.length) html += `<p class="vide">Aucune clôture en attente.</p>`;
+  S.clotures.forEach((c) => {
+    const total = CLES.reduce((a, k) => a + (Number(c.ecart?.[k]) || 0), 0);
+    html += `<div class="op" style="grid-template-columns:6px 1fr">
+      <span class="op-barre c-especes"></span>
+      <div>
+        <div class="op-titre">${esc(S.noms[c.point] || c.point)}, ${esc(c.caissier)}, ${c._ms ? dateLisible(jourDe(new Date(c._ms))) + " à " + heure(c._ms) : ""}</div>
+        <div class="defil"><table><thead><tr><th>Compte</th><th>Calculé</th><th>Compté</th><th>Écart</th></tr></thead><tbody>
+        ${CLES.map((k) => { const e = Number(c.ecart?.[k]) || 0; return `<tr><td>${COMPTES[k]}</td><td>${fmt(c.theorique?.[k])}</td><td>${fmt(c.compte?.[k])}</td><td class="${e < 0 ? "ecart-neg" : e > 0 ? "ecart-pos" : ""}">${fmt(e)}</td></tr>`; }).join("")}
+        <tr><td><b>Total</b></td><td></td><td></td><td class="${total < 0 ? "ecart-neg" : total > 0 ? "ecart-pos" : ""}"><b>${fmt(total)}</b></td></tr>
+        </tbody></table></div>
+        ${c.remarque ? `<div class="op-detail">Remarque : ${esc(c.remarque)}</div>` : ""}
+        <div class="rangee-btn">
+          <button class="petit-btn plein" data-valider-cloture="${c.id}">Valider et repartir des montants comptés</button>
+          <button class="petit-btn" data-vue-cloture="${c.id}">Valider sans changer les soldes</button>
+        </div>
+      </div></div>`;
+  });
+  html += `</section>`;
+
+  html += `<section class="panneau"><div class="panneau-tete"><h2>Demandes d'annulation</h2><span>${demandes.length}</span></div>
+    ${demandes.length ? demandes.map((o) => ligneOp(o, "patron")).join("") : `<p class="vide">Aucune demande en attente.</p>`}</section>`;
+  return html;
+}
+
+function vueJournal() {
+  const J = S.journal; if (!J.jour) J.jour = jourDe();
+  let liste = `<p class="vide">Chargement…</p>`;
+  if (J.ops) {
+    const r = resume(J.ops);
+    const parType = {};
+    J.ops.filter((o) => o.statut !== "annulee").forEach((o) => {
+      const k = o.type === "mouvement" ? (o.sens === "entree" ? "Entrées" : "Sorties") : TYPES[o.type];
+      parType[k] = parType[k] || { nb: 0, montant: 0 }; parType[k].nb++; parType[k].montant += Number(o.montant) || 0;
+    });
+    liste = `<div class="chiffres"><span><b>${r.nb}</b> opérations</span><span><b>${fmt(r.frais)}</b> de frais</span></div>
+      ${Object.keys(parType).length ? `<div class="defil"><table><thead><tr><th>Type</th><th>Nombre</th><th>Montant</th></tr></thead><tbody>${Object.entries(parType).map(([k, v]) => `<tr><td>${k}</td><td>${v.nb}</td><td>${fmt(v.montant)}</td></tr>`).join("")}</tbody></table></div>` : ""}
+      ${J.ops.length ? J.ops.map((o) => ligneOp(o, "patron-tout")).join("") : `<p class="vide">Aucune opération ce jour-là.</p>`}`;
+  }
+  return `<section class="panneau">
+    <div class="choix deux" role="radiogroup" aria-label="Point de vente">
+      ${["p1", "p2"].map((p) => `<label><input type="radio" name="j-point" value="${p}" ${J.point === p ? "checked" : ""}><span class="s-neutre">${esc(S.noms[p])}</span></label>`).join("")}
+    </div>
+    <label for="j-jour">Date<input type="date" id="j-jour" value="${J.jour}" max="${jourDe()}"></label>
+  </section>
+  <section class="panneau">${liste}</section>`;
+}
+
+async function chargerJournal() {
+  const J = S.journal; J.ops = null; rendre();
+  try {
+    const qs = await getDocs(query(collection(db, "operations"), where("point", "==", J.point), where("jour", "==", J.jour)));
+    J.ops = qs.docs.map((d) => { const x = d.data({ serverTimestamps: "estimate" }); x.id = d.id; x._ms = ms(x.date) || x.localMs || 0; return x; }).sort((a, b) => b._ms - a._ms);
+  } catch (e) { erreur(e); J.ops = []; }
+  rendre();
+}
+
+function vueTarifs() {
+  return `<section class="panneau">
+    <div class="panneau-tete"><h2>Grille des frais</h2></div>
+    <p class="aide">Les frais sont calculés automatiquement à partir de cette grille. Corrigez les chiffres puis enregistrez : les caissiers reçoivent les nouveaux tarifs tout de suite.</p>
+    <div class="defil"><table class="tarifs"><thead><tr><th>De (Ar)</th><th>À (Ar)</th><th>Dépôt</th><th>Transfert</th><th>Retrait</th><th></th></tr></thead>
+    <tbody id="t-corps">${S.tarifs.map((t, i) => ligneTarif(t, i)).join("")}</tbody></table></div>
+    <button class="secondaire" id="t-ajouter" type="button">Ajouter une ligne</button>
+    <button class="principal" id="t-enregistrer" type="button">Enregistrer les tarifs</button>
+    <button class="secondaire" id="t-defaut" type="button">Remettre la grille de la photo</button>
+  </section>`;
+}
+function ligneTarif(t, i) {
+  return `<tr>${["min", "max", "depot", "transfert", "retrait"].map((k) => `<td><input inputmode="numeric" data-k="${k}" value="${Number(t[k]) || 0}" aria-label="${k} ligne ${i + 1}"></td>`).join("")}<td><button class="petit-btn danger" data-suppr-ligne type="button" aria-label="Supprimer la ligne">×</button></td></tr>`;
+}
+
+function vueReglages() {
+  return `<section class="panneau">
+    <div class="panneau-tete"><h2>Noms des points de vente</h2></div>
+    <label for="r-p1">Point de vente de caisse1<input id="r-p1" value="${esc(S.noms.p1)}"></label>
+    <label for="r-p2">Point de vente de caisse2<input id="r-p2" value="${esc(S.noms.p2)}"></label>
+    <button class="principal" id="r-enregistrer" type="button">Enregistrer les noms</button>
+  </section>
+  <section class="panneau">
+    <div class="panneau-tete"><h2>Comptes</h2></div>
+    <p class="aide">Identifiants : patron, caisse1, caisse2. Les mots de passe se changent dans la console Firebase, rubrique Authentication.</p>
+  </section>`;
+}
+
+/* ================= Feuilles (formulaires) ================= */
+function ouvrir(html) { $("#feuille").innerHTML = html; $("#voile").hidden = false; document.body.classList.add("bloque"); const f = $("#feuille input:not([type=radio]), #feuille select"); if (f) setTimeout(() => f.focus(), 50); }
+function fermer() { $("#voile").hidden = true; $("#feuille").innerHTML = ""; document.body.classList.remove("bloque"); }
+$("#voile").addEventListener("click", (e) => { if (e.target.id === "voile") fermer(); });
+const tete = (titre) => `<div class="feuille-tete"><h2>${titre}</h2><button class="fermer" type="button" data-fermer aria-label="Fermer">×</button></div>`;
+const choixComptes = (nom, sel) => `<select id="${nom}">${CLES.map((k) => `<option value="${k}" ${k === sel ? "selected" : ""}>${COMPTES[k]}</option>`).join("")}</select>`;
+
+const LIBELLES = {
+  depot: { montant: "Montant déposé sur le compte du client (Ar)", bouton: "Enregistrer le dépôt" },
+  transfert: { montant: "Montant envoyé (Ar)", bouton: "Enregistrer le transfert" },
+  retrait: { montant: "Montant reçu sur votre puce (Ar)", bouton: "Enregistrer le retrait" }
+};
+
+function formOperateur(type) {
+  ouvrir(`${tete(TYPES[type])}
+    <form id="f-op" data-type="${type}" novalidate>
+      <div class="choix" role="radiogroup" aria-label="Opérateur">
+        ${Object.entries(OPERATEURS).map(([k, n]) => `<label><input type="radio" name="f-operateur" value="${k}"><span class="s-${k}">${n}</span></label>`).join("")}
+      </div>
+      <label for="f-montant">${LIBELLES[type].montant}<input id="f-montant" inputmode="numeric" autocomplete="off"></label>
+      <div class="calcul" id="f-calcul">Choisissez l'opérateur et tapez le montant.</div>
+      <label for="f-ref">Référence de la transaction<input id="f-ref" autocapitalize="characters" autocomplete="off"><span class="aide">Le numéro de transaction du SMS de l'opérateur.</span></label>
+      <label for="f-tel">Numéro du client<input id="f-tel" inputmode="tel" autocomplete="off"></label>
+      <label for="f-nom">Nom du client (facultatif)<input id="f-nom" autocomplete="off"></label>
+      <button class="principal" type="submit">${LIBELLES[type].bouton}</button>
+    </form>`);
+  const maj = () => {
+    const m = nombre($("#f-montant").value), f = fraisPour(type, m), box = $("#f-calcul");
+    box.classList.remove("erreur");
+    if (!m) { box.textContent = "Choisissez l'opérateur et tapez le montant."; return; }
+    if (f === null) { box.classList.add("erreur"); box.textContent = "Montant hors grille : il doit être compris entre " + fmt(S.tarifs[0].min) + " et " + fmt(S.tarifs[S.tarifs.length - 1].max) + "."; return; }
+    box.innerHTML = type === "retrait"
+      ? `Frais : <b>${fmt(f)}</b><br>À remettre au client : <b>${fmt(m - f)}</b>`
+      : `Frais : <b>${fmt(f)}</b><br>Le client paie : <b>${fmt(m + f)}</b>`;
+  };
+  $("#f-montant").addEventListener("input", maj);
+}
+
+function formEchange() {
+  ouvrir(`${tete("Échange")}
+    <form id="f-echange" novalidate>
+      <p class="aide">Pour transformer des espèces en crédit sur une puce, ou l'inverse.</p>
+      <label for="e-de">L'argent sort de${choixComptes("e-de", "especes")}</label>
+      <label for="e-vers">L'argent entre dans${choixComptes("e-vers", "mvola")}</label>
+      <label for="e-montant">Montant (Ar)<input id="e-montant" inputmode="numeric" autocomplete="off"></label>
+      <label for="e-motif">Remarque (facultatif)<input id="e-motif" autocomplete="off"></label>
+      <button class="principal" type="submit">Enregistrer l'échange</button>
+    </form>`);
+}
+
+function formMouvement() {
+  ouvrir(`${tete("Entrée / sortie d'argent")}
+    <form id="f-mouv" novalidate>
+      <div class="choix deux" role="radiogroup" aria-label="Sens">
+        <label><input type="radio" name="m-sens" value="entree"><span class="s-neutre">Entrée d'argent</span></label>
+        <label><input type="radio" name="m-sens" value="sortie"><span class="s-neutre">Sortie d'argent</span></label>
+      </div>
+      <label for="m-compte">Compte${choixComptes("m-compte", "especes")}</label>
+      <label for="m-montant">Montant (Ar)<input id="m-montant" inputmode="numeric" autocomplete="off"></label>
+      <label for="m-motif">Motif<input id="m-motif" autocomplete="off" placeholder="ex. apport du patron, achat de crédit, dépense"></label>
+      <button class="principal" type="submit">Enregistrer</button>
+    </form>`);
+}
+
+function formCloture() {
+  const p = S.point, s = soldesActuels(p);
+  ouvrir(`${tete("Clôturer la journée")}
+    <form id="f-cloture" novalidate>
+      <p class="aide">Comptez les espèces dans la caisse et consultez le solde réel de chaque puce, puis tapez les montants.</p>
+      ${CLES.map((k) => `<label for="c-${k}">${COMPTES[k]} réellement présent<input id="c-${k}" inputmode="numeric" autocomplete="off"><span class="aide" id="c-${k}-info">Calculé par l'application : ${fmt(s[k])}</span></label>`).join("")}
+      <label for="c-remarque">Remarque (facultatif)<input id="c-remarque" autocomplete="off"></label>
+      <button class="principal" type="submit">Envoyer la clôture au patron</button>
+    </form>`);
+  CLES.forEach((k) => {
+    $("#c-" + k).addEventListener("input", () => {
+      const v = $("#c-" + k).value.trim(), info = $("#c-" + k + "-info");
+      if (!v) { info.textContent = "Calculé par l'application : " + fmt(s[k]); return; }
+      const e = nombre(v) - s[k];
+      info.textContent = "Calculé : " + fmt(s[k]) + ". Écart : " + fmt(e);
+    });
+  });
+}
+
+function formFixer(p) {
+  const s = soldesActuels(p);
+  ouvrir(`${tete("Soldes de " + esc(S.noms[p]))}
+    <form id="f-fixer" data-point="${p}" novalidate>
+      <p class="aide">Tapez les montants réels à cet instant. Les opérations suivantes seront ajoutées ou retirées à partir de ces montants.</p>
+      ${CLES.map((k) => `<label for="x-${k}">${COMPTES[k]}<input id="x-${k}" inputmode="numeric" value="${Math.max(0, Math.round(s[k]))}" autocomplete="off"></label>`).join("")}
+      <button class="principal" type="submit">Enregistrer les soldes</button>
+    </form>`);
+}
+
+function formDemandeAnnul(id) {
+  ouvrir(`${tete("Demander l'annulation")}
+    <form id="f-annul" data-id="${id}" novalidate>
+      <p class="aide">Le patron doit accepter la demande. L'opération reste comptée tant qu'il ne l'a pas annulée.</p>
+      <label for="a-motif">Motif<input id="a-motif" autocomplete="off" placeholder="ex. erreur de montant"></label>
+      <button class="principal" type="submit">Envoyer la demande</button>
+    </form>`);
+}
+
+/* ================= Enregistrements ================= */
+function enregistrer(ref, data, message) {
+  addDoc(ref, data).catch((e) => { erreur(e); toast("Échec de l'enregistrement : " + (e.code || e.message), true); });
+  fermer();
+  toast(message + (navigator.onLine ? "" : " Envoi dès le retour d'internet."));
+}
+
+function verifierSolde(p, compte, montant) {
+  if (!S.soldes[p]) return null; // soldes pas encore fixés : pas de blocage
+  const s = soldesActuels(p);
+  return s[compte] < montant ? "Solde " + COMPTES[compte] + " insuffisant (" + fmt(s[compte]) + ")." : null;
+}
+
+document.addEventListener("submit", (ev) => {
+  const f = ev.target; if (f.id === "form-login") return;
+  ev.preventDefault();
+  const p = S.point;
+  const base = () => ({ point: p, caissier: S.user, statut: "valide", jour: jourDe(), localMs: Date.now(), date: serverTimestamp() });
+
+  if (f.id === "f-op") {
+    const type = f.dataset.type;
+    const op = (f.querySelector("input[name=f-operateur]:checked") || {}).value;
+    const m = nombre($("#f-montant").value), frais = fraisPour(type, m);
+    const reference = $("#f-ref").value.trim().toUpperCase(), tel = $("#f-tel").value.trim(), client = $("#f-nom").value.trim();
+    if (!op) return toast("Choisissez l'opérateur.", true);
+    if (!m) return toast("Tapez le montant.", true);
+    if (frais === null) return toast("Montant hors grille des tarifs.", true);
+    if (!reference) return toast("Tapez la référence de la transaction.", true);
+    if (!tel) return toast("Tapez le numéro du client.", true);
+    if (S.ops[p].some((o) => o.reference === reference && o.operateur === op && o.statut !== "annulee")) return toast("Cette référence est déjà enregistrée.", true);
+    const manque = type === "retrait" ? verifierSolde(p, "especes", m - frais) : verifierSolde(p, op, m);
+    if (manque) return toast(manque, true);
+    const data = Object.assign(base(), { type, operateur: op, montant: m, frais, reference, tel });
+    if (client) data.client = client;
+    return enregistrer(collection(db, "operations"), data, TYPES[type] + " enregistré.");
+  }
+
+  if (f.id === "f-echange") {
+    const de = $("#e-de").value, vers = $("#e-vers").value, m = nombre($("#e-montant").value), motif = $("#e-motif").value.trim();
+    if (de === vers) return toast("Choisissez deux comptes différents.", true);
+    if (!m) return toast("Tapez le montant.", true);
+    const manque = verifierSolde(p, de, m); if (manque) return toast(manque, true);
+    const data = Object.assign(base(), { type: "echange", de, vers, montant: m, frais: 0 });
+    if (motif) data.motif = motif;
+    return enregistrer(collection(db, "operations"), data, "Échange enregistré.");
+  }
+
+  if (f.id === "f-mouv") {
+    const sens = (f.querySelector("input[name=m-sens]:checked") || {}).value;
+    const compte = $("#m-compte").value, m = nombre($("#m-montant").value), motif = $("#m-motif").value.trim();
+    if (!sens) return toast("Choisissez entrée ou sortie.", true);
+    if (!m) return toast("Tapez le montant.", true);
+    if (!motif) return toast("Tapez le motif.", true);
+    if (sens === "sortie") { const manque = verifierSolde(p, compte, m); if (manque) return toast(manque, true); }
+    return enregistrer(collection(db, "operations"), Object.assign(base(), { type: "mouvement", sens, compte, montant: m, frais: 0, motif }),
+      (sens === "entree" ? "Entrée" : "Sortie") + " enregistrée.");
+  }
+
+  if (f.id === "f-cloture") {
+    const s = soldesActuels(p), compte = {}, ecart = {}, theorique = {};
+    for (const k of CLES) {
+      if (!$("#c-" + k).value.trim()) return toast("Tapez le montant pour " + COMPTES[k] + " (0 si vide).", true);
+      compte[k] = nombre($("#c-" + k).value); theorique[k] = Math.round(s[k]); ecart[k] = compte[k] - theorique[k];
+    }
+    const data = { point: p, caissier: S.user, jour: jourDe(), date: serverTimestamp(), theorique, compte, ecart, statut: "a_valider" };
+    const rq = $("#c-remarque").value.trim(); if (rq) data.remarque = rq;
+    return enregistrer(collection(db, "clotures"), data, "Clôture envoyée au patron.");
+  }
+
+  if (f.id === "f-fixer") {
+    const pt = f.dataset.point, data = { depuis: serverTimestamp() };
+    CLES.forEach((k) => { data[k] = nombre($("#x-" + k).value); });
+    setDoc(doc(db, "soldes", pt), data).catch(erreur);
+    fermer(); return toast("Soldes enregistrés.");
+  }
+
+  if (f.id === "f-annul") {
+    const motif = $("#a-motif").value.trim();
+    if (!motif) return toast("Tapez le motif.", true);
+    updateDoc(doc(db, "operations", f.dataset.id), { statut: "annulation_demandee", motifAnnulation: motif }).catch(erreur);
+    fermer(); return toast("Demande envoyée au patron.");
+  }
+});
+
+/* ================= Clics ================= */
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest("button"); if (!b) return;
+  const d = b.dataset;
+  if ("fermer" in d) return fermer();
+  if (d.form) {
+    if (["depot", "transfert", "retrait"].includes(d.form)) return formOperateur(d.form);
+    if (d.form === "echange") return formEchange();
+    if (d.form === "mouvement") return formMouvement();
+    if (d.form === "cloture") return formCloture();
+  }
+  if (d.demanderAnnul) return formDemandeAnnul(d.demanderAnnul);
+  if (d.onglet) { S.onglet = d.onglet; if (d.onglet === "journal") chargerJournal(); return rendre(); }
+  if (d.voirJournal) { S.journal.point = d.voirJournal; S.journal.jour = jourDe(); S.onglet = "journal"; return chargerJournal(); }
+  if (d.fixer) return formFixer(d.fixer);
+  if (d.annuler) { if (confirm("Annuler définitivement cette opération ? Elle ne sera plus comptée dans les soldes.")) updateDoc(doc(db, "operations", d.annuler), { statut: "annulee" }).then(() => toast("Opération annulée.")).catch(erreur); return; }
+  if (d.refuser) { updateDoc(doc(db, "operations", d.refuser), { statut: "valide" }).then(() => toast("Demande refusée, l'opération reste comptée.")).catch(erreur); return; }
+  if (d.validerCloture || d.vueCloture) {
+    const id = d.validerCloture || d.vueCloture, c = S.clotures.find((x) => x.id === id); if (!c) return;
+    const taches = [updateDoc(doc(db, "clotures", id), { statut: "validee" })];
+    if (d.validerCloture) {
+      if (!confirm("Les soldes de " + S.noms[c.point] + " seront remplacés par les montants comptés. Continuer ?")) return;
+      const data = Object.assign({}, c.compte, { depuis: c.date });
+      taches.push(setDoc(doc(db, "soldes", c.point), data));
+    }
+    Promise.all(taches).then(() => toast("Clôture validée.")).catch(erreur);
+    return;
+  }
+  if (b.id === "t-ajouter") {
+    const corps = $("#t-corps"), n = corps.children.length;
+    corps.insertAdjacentHTML("beforeend", ligneTarif({ min: 0, max: 0, depot: 0, transfert: 0, retrait: 0 }, n)); return;
+  }
+  if ("supprLigne" in d) { b.closest("tr").remove(); return; }
+  if (b.id === "t-defaut") { if (confirm("Remplacer la grille affichée par celle de la photo ? (Pensez à enregistrer ensuite.)")) $("#t-corps").innerHTML = TARIFS_DEFAUT.map((t, i) => ligneTarif(t, i)).join(""); return; }
+  if (b.id === "t-enregistrer") {
+    const lignes = [...document.querySelectorAll("#t-corps tr")].map((tr) => {
+      const o = {}; tr.querySelectorAll("input").forEach((i) => { o[i.dataset.k] = nombre(i.value); }); return o;
+    }).filter((l) => l.max > 0).sort((a, b) => a.min - b.min);
+    if (!lignes.length) return toast("La grille est vide.", true);
+    const faute = lignes.find((l) => l.min > l.max);
+    if (faute) return toast("Une ligne a un « De » plus grand que son « À ».", true);
+    if (document.activeElement) document.activeElement.blur();
+    setDoc(doc(db, "config", "tarifs"), { lignes }).then(() => toast("Tarifs enregistrés.")).catch(erreur); return;
+  }
+  if (b.id === "r-enregistrer") {
+    setDoc(doc(db, "config", "reglages"), { nomP1: $("#r-p1").value.trim() || "Point de vente 1", nomP2: $("#r-p2").value.trim() || "Point de vente 2" }, { merge: true })
+      .then(() => toast("Noms enregistrés.")).catch(erreur); return;
+  }
+});
+
+document.addEventListener("change", (ev) => {
+  const t = ev.target;
+  if (t.name === "j-point") { S.journal.point = t.value; chargerJournal(); }
+  if (t.id === "j-jour" && t.value) { S.journal.jour = t.value; chargerJournal(); }
+  if (t.name === "f-operateur") { const m = $("#f-montant"); if (m) m.dispatchEvent(new Event("input")); }
+});
+</script>
+</body>
+</html>
