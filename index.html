@@ -231,7 +231,7 @@ const DOMAINE = "@cashpoint.app";
 const OPERATEURS = { mvola: "MVola", orange: "Orange Money", airtel: "Airtel Money" };
 const COMPTES = { especes: "Espèces", mvola: "MVola", orange: "Orange Money", airtel: "Airtel Money" };
 const CLES = ["especes", "mvola", "orange", "airtel"];
-const TYPES = { depot: "Dépôt", transfert: "Transfert", retrait: "Retrait", echange: "Échange", mouvement: "Entrée / sortie" };
+const TYPES = { depot: "Dépôt", transfert: "Envoi", retrait: "Retrait", echange: "Échange", mouvement: "Entrée / sortie" };
 
 // Grille lue sur la photo. Le patron peut la corriger dans l'onglet Tarifs.
 const TARIFS_DEFAUT = [
@@ -245,7 +245,7 @@ const TARIFS_DEFAUT = [
   [2000001,3000000,55000,19600,85000],[3000001,4000000,75000,24500,105000],[4000001,5000000,95000,29400,145000],
   [5000001,6000000,115000,34300,175000],[6000001,7000000,135000,39200,195000],[7000001,8000000,155000,44100,235000],
   [8000001,9000000,175000,49000,255000],[9000001,10000000,195000,53900,295000]
-].map(([min,max,depot,transfert,retrait]) => ({ min, max, depot, transfert, retrait }));
+].map(([min,max,depotPhoto,transfert,retrait]) => ({ min, max, depot: 0, transfert, retrait })); // dépôt sans frais
 
 /* ================= État ================= */
 const S = {
@@ -374,7 +374,7 @@ function suivreClotures() {
 /* ================= Connexion ================= */
 $("#form-login").addEventListener("submit", async (ev) => {
   ev.preventDefault();
-  const id = $("#login-id").value.trim().toLowerCase().replace(/\s+/g, "");
+  const id = $("#login-id").value.trim().toLowerCase().replace(/\s+/g, "").replace(/@.*$/, "");
   const mdp = $("#login-mdp").value;
   const btn = $("#btn-login"); btn.disabled = true; $("#login-err").textContent = "";
   try {
@@ -475,8 +475,8 @@ function rendreCaisse() {
     <section class="soldes" aria-label="Soldes actuels">${tuiles(s)}</section>
     ${S.soldes[p] ? "" : `<p class="alerte">Le patron n'a pas encore fixé les soldes de départ de ce point. Les soldes partent de zéro.</p>`}
     <section class="actions">
-      <button class="act" data-form="depot">Dépôt<small>le client verse, vous envoyez</small></button>
-      <button class="act" data-form="transfert">Transfert<small>envoi vers un tiers</small></button>
+      <button class="act" data-form="depot">Dépôt<small>sur le compte du client, sans frais</small></button>
+      <button class="act" data-form="transfert">Envoi<small>vers un numéro, avec frais</small></button>
       <button class="act" data-form="retrait">Retrait<small>le client reçoit des espèces</small></button>
       <button class="act" data-form="echange">Échange<small>espèces et puces</small></button>
       <button class="act large" data-form="mouvement">Entrée / sortie d'argent<small>apport, dépense, prélèvement</small></button>
@@ -583,7 +583,7 @@ function vueTarifs() {
   return `<section class="panneau">
     <div class="panneau-tete"><h2>Grille des frais</h2></div>
     <p class="aide">Les frais sont calculés automatiquement à partir de cette grille. Corrigez les chiffres puis enregistrez : les caissiers reçoivent les nouveaux tarifs tout de suite.</p>
-    <div class="defil"><table class="tarifs"><thead><tr><th>De (Ar)</th><th>À (Ar)</th><th>Dépôt</th><th>Transfert</th><th>Retrait</th><th></th></tr></thead>
+    <div class="defil"><table class="tarifs"><thead><tr><th>De (Ar)</th><th>À (Ar)</th><th>Dépôt</th><th>Envoi</th><th>Retrait</th><th></th></tr></thead>
     <tbody id="t-corps">${S.tarifs.map((t, i) => ligneTarif(t, i)).join("")}</tbody></table></div>
     <button class="secondaire" id="t-ajouter" type="button">Ajouter une ligne</button>
     <button class="principal" id="t-enregistrer" type="button">Enregistrer les tarifs</button>
@@ -616,7 +616,7 @@ const choixComptes = (nom, sel) => `<select id="${nom}">${CLES.map((k) => `<opti
 
 const LIBELLES = {
   depot: { montant: "Montant déposé sur le compte du client (Ar)", bouton: "Enregistrer le dépôt" },
-  transfert: { montant: "Montant envoyé (Ar)", bouton: "Enregistrer le transfert" },
+  transfert: { montant: "Montant envoyé (Ar)", bouton: "Enregistrer l'envoi" },
   retrait: { montant: "Montant reçu sur votre puce (Ar)", bouton: "Enregistrer le retrait" }
 };
 
@@ -638,6 +638,7 @@ function formOperateur(type) {
     box.classList.remove("erreur");
     if (!m) { box.textContent = "Choisissez l'opérateur et tapez le montant."; return; }
     if (f === null) { box.classList.add("erreur"); box.textContent = "Montant hors grille : il doit être compris entre " + fmt(S.tarifs[0].min) + " et " + fmt(S.tarifs[S.tarifs.length - 1].max) + "."; return; }
+    if (f === 0) { box.innerHTML = `Sans frais<br>Le client paie : <b>${fmt(m)}</b>`; return; }
     box.innerHTML = type === "retrait"
       ? `Frais : <b>${fmt(f)}</b><br>À remettre au client : <b>${fmt(m - f)}</b>`
       : `Frais : <b>${fmt(f)}</b><br>Le client paie : <b>${fmt(m + f)}</b>`;
