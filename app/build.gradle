@@ -9,13 +9,27 @@ android {
         applicationId "com.suivi.ventes"
         minSdk 21
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "2.0"
+    }
+
+    // Clé fixe : chaque nouvelle APK peut être installée par-dessus l'ancienne sans effacer les données.
+    signingConfigs {
+        cashpoint {
+            storeFile file("cashpoint.keystore")
+            storePassword "cashpoint2026"
+            keyAlias "cashpoint"
+            keyPassword "cashpoint2026"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig signingConfigs.cashpoint
+        }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.cashpoint
         }
     }
 
