@@ -526,6 +526,7 @@ function formCloture() {
     <label for="k-rq">Remarque (facultatif)<input id="k-rq" autocomplete="off"></label>
     <button class="principal" type="submit">Clôturer et créer le rapport</button></form>`);
   CLES.forEach((k) => $("#k-" + k).addEventListener("input", () => {
+    const form = $("#f-cloture"); if (form.dataset.confirme === "1") { form.dataset.confirme = ""; const b = $("#k-alerte"); if (b) b.remove(); form.querySelector("button[type=submit]").textContent = "Clôturer et créer le rapport"; }
     const v = $("#k-" + k).value.trim(), info = $("#k-" + k + "-info");
     info.textContent = v ? "Calculé : " + fmt(s[k]) + ". Écart : " + fmt(nombre(v) - s[k]) : "Calculé par l'application : " + fmt(s[k]);
   }));
@@ -554,6 +555,18 @@ function cloturer() {
   for (const k of CLES) {
     if (!$("#k-" + k).value.trim()) return toast("Tapez le montant pour " + COMPTES[k] + " (0 si vide).", true);
     compte[k] = nombre($("#k-" + k).value); theorique[k] = Math.round(s[k]); ecart[k] = compte[k] - theorique[k];
+  }
+  // Sécurité contre les fautes de frappe : un gros écart doit être confirmé.
+  const gros = CLES.filter((k) => Math.abs(ecart[k]) >= 10000);
+  const form = $("#f-cloture");
+  if (gros.length && form.dataset.confirme !== "1") {
+    let box = $("#k-alerte");
+    if (!box) { box = document.createElement("p"); box.id = "k-alerte"; box.className = "alerte"; form.querySelector("button[type=submit]").before(box); }
+    box.innerHTML = "Écart important : " + gros.map((k) => esc(COMPTES[k]) + " " + fmt(ecart[k])).join(", ") + ".<br>Vérifiez les montants (un zéro oublié ?). Si c'est juste, touchez « Je confirme ».";
+    form.querySelector("button[type=submit]").textContent = "Je confirme, clôturer";
+    form.dataset.confirme = "1";
+    box.scrollIntoView({ block: "center" });
+    return;
   }
   const fin = Date.now();
   const rapport = {
