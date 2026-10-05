@@ -159,19 +159,19 @@ const CLE_SIGNATURE = "cP-mG-2026-Rk7#vQ9!tZ3@wL5$hN8";
 const OPERATEURS = { mvola: "MVola", orange: "Orange Money", airtel: "Airtel Money" };
 const COMPTES = { especes: "Espèces", mvola: "MVola", orange: "Orange Money", airtel: "Airtel Money" };
 const CLES = ["especes", "mvola", "orange", "airtel"];
-const TYPES = { depot: "Dépôt", transfert: "Envoi", retrait: "Retrait", echange: "Échange", mouvement: "Entrée / sortie", ajustement: "Correction des soldes" };
+const TYPES = { depot: "Dépôt sur place", transfert: "Dépôt à distance", retrait: "Retrait", echange: "Échange", mouvement: "Entrée / sortie", ajustement: "Correction des soldes" };
 
 const TARIFS_DEFAUT = [
-  [1001,5000,0,140,500],[5001,10000,0,275,1000],[10001,20000,0,550,1500],
-  [20001,30000,0,1300,3000],[30001,40000,0,1300,4000],[40001,50000,0,1300,4200],
-  [50001,60000,0,1900,5000],[60001,70000,0,1900,5200],[70001,80000,0,1900,5400],
-  [80001,90000,0,1900,5600],[90001,100000,0,1900,7000],[100001,200000,0,3400,10000],
-  [200001,300000,0,4700,15000],[300001,400000,0,4700,17000],[400001,500000,0,4700,19000],
-  [500001,600000,0,8800,29000],[600001,700000,0,8800,31000],[700001,800000,0,8800,33000],
-  [800001,900000,0,8800,35000],[900001,1000000,0,8800,37000],[1000001,2000000,0,14700,55000],
-  [2000001,3000000,0,19600,85000],[3000001,4000000,0,24500,105000],[4000001,5000000,0,29400,145000],
-  [5000001,6000000,0,34300,175000],[6000001,7000000,0,39200,195000],[7000001,8000000,0,44100,235000],
-  [8000001,9000000,0,49000,265000],[9000001,10000000,0,53900,295000]
+  [1001,5000,100,140,500],[5001,10000,100,275,1000],[10001,20000,200,550,1500],
+  [20001,30000,300,1300,2800],[30001,40000,400,1300,3000],[40001,50000,500,1300,3200],
+  [50001,60000,600,1900,4500],[60001,70000,700,1900,4700],[70001,80000,800,1900,4900],
+  [80001,90000,900,1900,5000],[90001,100000,1000,1900,6800],[100001,200000,2000,3400,9000],
+  [200001,300000,3000,4700,12500],[300001,400000,4000,4700,13500],[400001,500000,5000,4700,14500],
+  [500001,600000,6000,8800,23600],[600001,700000,7000,8800,24600],[700001,800000,8000,8800,25600],
+  [800001,900000,9000,8800,26600],[900001,1000000,10000,8800,27600],[1000001,2000000,20000,14700,49500],
+  [2000001,3000000,30000,19600,69500],[3000001,4000000,40000,24500,89000],[4000001,5000000,50000,29400,109000],
+  [5000001,6000000,60000,34300,126600],[6000001,7000000,70000,39200,148500],[7000001,8000000,80000,44100,168500],
+  [8000001,9000000,90000,49000,189000],[9000001,10000000,100000,53900,209000]
 ].map(([min,max,depot,transfert,retrait]) => ({ min, max, depot, transfert, retrait }));
 
 /* ================= SHA-256 / HMAC (sans internet, sans dépendance) ================= */
@@ -232,6 +232,7 @@ function sauver() {
   catch (e) { toast("Mémoire pleine : faites une sauvegarde puis effacez les anciens rapports (Réglages).", true); return false; }
 }
 D = charger();
+if (D && D.role && D.grille !== 2) { D.tarifs = TARIFS_DEFAUT; D.tarifsDate = 0; D.grille = 2; try { localStorage.setItem(STOCK, JSON.stringify(D)); } catch (e) {} }
 
 /* ================= Outils ================= */
 const $ = (s) => document.querySelector(s);
@@ -258,8 +259,26 @@ function fraisPour(type, montant, tarifs) {
   const l = (tarifs || D.tarifs).find((t) => montant >= Number(t.min) && montant <= Number(t.max));
   return l ? (Number(l[type]) || 0) : null;
 }
+const ligneTarif2 = (m) => D.tarifs.find((t) => m >= Number(t.min) && m <= Number(t.max)) || null;
+const MODES = { plus: "frais payés en plus", deduit: "frais déduits", intact: "montant intact (retrait compris)" };
+// Calcul d'une opération Dépôt (sur place / à distance) ou Retrait
+function calculOp(type, mode, m, envoyeSaisi) {
+  const t = ligneTarif2(m); if (!t) return null;
+  const dep = Number(t.depot) || 0, tr = Number(t.transfert) || 0, al = Number(t.retrait) || 0;
+  if (type === "retrait") return { paye: 0, envoye: 0, fraisOrange: 0, frais: al, remis: m - al };
+  if (type === "depot") return mode === "deduit" ? { paye: m, envoye: m - dep, fraisOrange: 0, frais: dep } : { paye: m + dep, envoye: m, fraisOrange: 0, frais: dep };
+  if (mode === "deduit") return { paye: m, envoye: m - dep - tr, fraisOrange: tr, frais: dep };
+  if (mode === "intact") {
+    const env = envoyeSaisi || m, t2 = ligneTarif2(env), fo = t2 ? Number(t2.transfert) || 0 : tr;
+    return { paye: m + al, envoye: env, fraisOrange: fo, frais: m + al - env - fo };
+  }
+  return { paye: m + dep + tr, envoye: m, fraisOrange: tr, frais: dep };
+}
 function effets(op) {
   const e = zero(), m = Number(op.montant) || 0, f = Number(op.frais) || 0;
+  if ((op.type === "depot" || op.type === "transfert") && op.paye !== undefined) {
+    e[op.operateur] -= (Number(op.envoye) || 0) + (Number(op.fraisOrange) || 0); e.especes += Number(op.paye) || 0; return e;
+  }
   switch (op.type) {
     case "depot": case "transfert": e[op.operateur] -= m; e.especes += m + f; break;
     case "retrait": e[op.operateur] += m; e.especes += f - m; break;
@@ -394,7 +413,7 @@ function enregistrerConfig(f) {
   if (code.length < 4) return toast("Le code du patron doit avoir au moins 4 caractères.", true);
   if (code !== $("#c-code2").value.trim()) return toast("Les deux codes ne sont pas identiques.", true);
   const sel = aleatoire();
-  const base = { v: VERSION, role, sel, codePatron: hashCode(code, sel), appareil: aleatoire(), tarifs: TARIFS_DEFAUT, tarifsDate: 0, cree: Date.now() };
+  const base = { v: VERSION, grille: 2, role, sel, codePatron: hashCode(code, sel), appareil: aleatoire(), tarifs: TARIFS_DEFAUT, tarifsDate: 0, cree: Date.now() };
   if (role === "patron") {
     D = Object.assign(base, { noms: { p1: $("#c-n1").value.trim() || "Point de vente 1", p2: $("#c-n2").value.trim() || "Point de vente 2" }, rapports: [] });
     DEVERROUILLE = true;
@@ -429,8 +448,8 @@ function rendreCaisse() {
   $("#vue").innerHTML = `
     <section class="soldes" aria-label="Soldes actuels">${tuiles(s)}</section>
     <section class="actions">
-      <button class="act" data-form="depot">Dépôt<small>sur le compte du client, sans frais</small></button>
-      <button class="act" data-form="transfert">Envoi<small>vers un numéro, avec frais</small></button>
+      <button class="act" data-form="depot">Dépôt sur place<small>sur le compte du client</small></button>
+      <button class="act" data-form="transfert">Dépôt à distance<small>vers un autre numéro</small></button>
       <button class="act" data-form="retrait">Retrait<small>le client reçoit des espèces</small></button>
       <button class="act" data-form="echange">Échange<small>espèces et puces</small></button>
       <button class="act large" data-form="mouvement">Entrée / sortie d'argent<small>apport, dépense, prélèvement</small></button>
@@ -438,8 +457,8 @@ function rendreCaisse() {
     </section>
     <section class="panneau">
       <div class="panneau-tete"><h2>Journée en cours</h2><span>depuis le ${dateHeure(D.debut)}</span></div>
-      <div class="chiffres"><span><b>${nb}</b> opération${nb > 1 ? "s" : ""}</span><span><b>${fmt(frais)}</b> de frais encaissés</span></div>
-      ${ops.length ? ops.map((o) => ligneOp(o, "caisse")).join("") : `<p class="vide">Aucune opération. Touchez Dépôt, Envoi ou Retrait pour commencer.</p>`}
+      <div class="chiffres"><span><b>${nb}</b> opération${nb > 1 ? "s" : ""}</span><span><b>${fmt(frais)}</b> de bénéfice</span></div>
+      ${ops.length ? ops.map((o) => ligneOp(o, "caisse")).join("") : `<p class="vide">Aucune opération. Touchez Dépôt ou Retrait pour commencer.</p>`}
     </section>`;
 }
 function rendreRapportsCaisse() {
@@ -456,7 +475,9 @@ function ligneOp(o, mode) {
   let titre = "", detail = "";
   if (["depot", "transfert", "retrait"].includes(o.type)) {
     titre = TYPES[o.type] + " " + OPERATEURS[o.operateur];
-    detail = [o.tel, o.client, o.reference ? "Réf. " + o.reference : "", o.frais ? "frais " + fmt(o.frais) : ""].filter(Boolean).join(", ");
+    detail = [o.tel, o.client, o.reference ? "Réf. " + o.reference : ""].filter(Boolean).join(", ");
+    if (o.paye !== undefined) detail += (detail ? ", " : "") + (MODES[o.mode] || "") + ", client a payé " + fmt(o.paye) + ", envoyé " + fmt(o.envoye) + (o.fraisOrange ? ", frais opérateur " + fmt(o.fraisOrange) : "") + ", bénéfice " + fmt(o.frais);
+    else if (o.frais) detail += ", frais " + fmt(o.frais);
   } else if (o.type === "echange") { titre = "Échange " + COMPTES[o.de] + " vers " + COMPTES[o.vers]; detail = o.motif || ""; }
   else if (o.type === "mouvement") { titre = (o.sens === "entree" ? "Entrée " : "Sortie ") + COMPTES[o.compte]; detail = o.motif || ""; }
   else { titre = "Correction des soldes par le patron"; detail = CLES.filter((k) => o.delta[k]).map((k) => COMPTES[k] + " " + (o.delta[k] > 0 ? "+" : "") + fmt(o.delta[k])).join(", ") || "aucun changement"; }
@@ -472,8 +493,8 @@ function ligneOp(o, mode) {
 
 /* ---- Formulaires d'opérations ---- */
 const LIBELLES = {
-  depot: { montant: "Montant déposé sur le compte du client (Ar)", bouton: "Enregistrer le dépôt" },
-  transfert: { montant: "Montant envoyé (Ar)", bouton: "Enregistrer l'envoi" },
+  depot: { montant: "Montant à déposer (Ar)", bouton: "Enregistrer le dépôt" },
+  transfert: { montant: "Montant à envoyer (Ar)", bouton: "Enregistrer le dépôt à distance" },
   retrait: { montant: "Montant reçu sur votre puce (Ar)", bouton: "Enregistrer le retrait" }
 };
 function formOperateur(type) {
@@ -482,21 +503,34 @@ function formOperateur(type) {
       ${Object.entries(OPERATEURS).map(([k, n]) => `<label><input type="radio" name="f-operateur" value="${k}"><span class="s-${k}">${n}</span></label>`).join("")}
     </div>
     <label for="f-montant">${LIBELLES[type].montant}<input id="f-montant" inputmode="numeric" autocomplete="off"></label>
+    ${type === "retrait" ? "" : `<p class="aide" style="margin-top:12px"><b>Les frais</b></p><div class="choix ${type === "transfert" ? "" : "deux"}" role="radiogroup" aria-label="Frais">
+      <label><input type="radio" name="f-mode" value="plus" checked><span class="s-neutre">Payés en plus</span></label>
+      <label><input type="radio" name="f-mode" value="deduit"><span class="s-neutre">Déduits du montant</span></label>
+      ${type === "transfert" ? `<label><input type="radio" name="f-mode" value="intact"><span class="s-neutre">Montant intact (retrait compris)</span></label>` : ""}
+    </div>`}
+    ${type === "transfert" ? `<label for="f-envoye" id="f-envoye-l" hidden>Montant réellement envoyé (voir le SMS)<input id="f-envoye" inputmode="numeric" autocomplete="off"></label>` : ""}
     <div class="calcul" id="f-calcul">Choisissez l'opérateur et tapez le montant.</div>
     <label for="f-ref">Référence de la transaction<input id="f-ref" autocapitalize="characters" autocomplete="off"><span class="aide">Le numéro de transaction du SMS de l'opérateur.</span></label>
     <label for="f-tel">Numéro du client<input id="f-tel" inputmode="tel" autocomplete="off"></label>
     <label for="f-nom">Nom du client (facultatif)<input id="f-nom" autocomplete="off"></label>
     <button class="principal" type="submit">${LIBELLES[type].bouton}</button></form>`);
   $("#f-montant").addEventListener("input", majCalcul);
+  if ($("#f-envoye")) $("#f-envoye").addEventListener("input", majCalcul);
 }
 function majCalcul() {
   const f = $("#f-op"); if (!f) return;
-  const type = f.dataset.type, m = nombre($("#f-montant").value), fr = fraisPour(type, m), box = $("#f-calcul");
+  const type = f.dataset.type, m = nombre($("#f-montant").value), box = $("#f-calcul");
+  const mode = (f.querySelector("input[name=f-mode]:checked") || {}).value;
+  const envL = $("#f-envoye-l"); if (envL) envL.hidden = mode !== "intact";
+  const c = calculOp(type, mode, m, mode === "intact" ? nombre($("#f-envoye").value) : 0);
   box.classList.remove("erreur");
   if (!m) { box.textContent = "Choisissez l'opérateur et tapez le montant."; return; }
-  if (fr === null) { box.classList.add("erreur"); box.textContent = "Montant hors grille : entre " + fmt(D.tarifs[0].min) + " et " + fmt(D.tarifs[D.tarifs.length - 1].max) + "."; return; }
-  if (fr === 0) { box.innerHTML = `Sans frais<br>Le client paie : <b>${fmt(m)}</b>`; return; }
-  box.innerHTML = type === "retrait" ? `Frais : <b>${fmt(fr)}</b><br>À remettre au client : <b>${fmt(m - fr)}</b>` : `Frais : <b>${fmt(fr)}</b><br>Le client paie : <b>${fmt(m + fr)}</b>`;
+  if (!c) { box.classList.add("erreur"); box.textContent = "Montant hors grille : entre " + fmt(D.tarifs[0].min) + " et " + fmt(D.tarifs[D.tarifs.length - 1].max) + "."; return; }
+  if (type === "retrait") { box.innerHTML = `Frais : <b>${fmt(c.frais)}</b><br>À remettre au client : <b>${fmt(c.remis)}</b>`; return; }
+  box.innerHTML = `Le client paie : <b>${fmt(c.paye)}</b><br>Montant à envoyer : <b>${fmt(c.envoye)}</b>` +
+    (c.fraisOrange ? `<br>Frais pris par l'opérateur sur la puce : ${fmt(c.fraisOrange)}` : "") +
+    `<br>Bénéfice : <b>${fmt(c.frais)}</b>`;
+  if (c.envoye <= 0 || c.frais < 0) { box.classList.add("erreur"); box.innerHTML += "<br>Attention : montant trop petit ou bénéfice négatif."; }
 }
 function formEchange() {
   ouvrir(`${tete("Échange")}<form id="f-echange" novalidate>
@@ -720,7 +754,7 @@ function vueTarifs() {
     <button class="secondaire" type="button" data-envoyer-tarifs>Envoyer les tarifs aux caissiers</button></section>`;
 }
 function editeurTarifs() {
-  return `<div class="defil"><table class="tarifs"><thead><tr><th>De (Ar)</th><th>À (Ar)</th><th>Dépôt</th><th>Envoi</th><th>Retrait</th><th></th></tr></thead>
+  return `<div class="defil"><table class="tarifs"><thead><tr><th>De (Ar)</th><th>À (Ar)</th><th>Frais dépôt</th><th>Frais transfert</th><th>Vola alefa / retrait</th><th></th></tr></thead>
     <tbody id="t-corps">${D.tarifs.map(ligneTarif).join("")}</tbody></table></div>
     <button class="secondaire" id="t-ajouter" type="button">Ajouter une ligne</button>`;
 }
@@ -768,7 +802,8 @@ document.addEventListener("submit", (ev) => {
   }
   if (f.id === "f-op") {
     const type = f.dataset.type, op = (f.querySelector("input[name=f-operateur]:checked") || {}).value;
-    const m = nombre($("#f-montant").value), frais = fraisPour(type, m);
+    const m = nombre($("#f-montant").value), mode = (f.querySelector("input[name=f-mode]:checked") || {}).value;
+    const c = calculOp(type, mode, m, mode === "intact" ? nombre($("#f-envoye").value) : 0), frais = c ? c.frais : null;
     const reference = $("#f-ref").value.trim().toUpperCase(), tel = $("#f-tel").value.trim(), client = $("#f-nom").value.trim();
     if (!op) return toast("Choisissez l'opérateur.", true);
     if (!m) return toast("Tapez le montant.", true);
@@ -777,9 +812,11 @@ document.addEventListener("submit", (ev) => {
     if (!tel) return toast("Tapez le numéro du client.", true);
     const deja = D.ops.concat(...D.rapports.slice(-10).map((r) => rapportDe(r).ops)).some((o) => o.reference === reference && o.operateur === op && o.statut !== "annulee");
     if (deja) return toast("Cette référence est déjà enregistrée.", true);
-    const pb = type === "retrait" ? manque("especes", m - frais) : manque(op, m);
+    if (type !== "retrait" && (c.envoye <= 0 || c.frais < 0)) return toast("Montant trop petit ou bénéfice négatif : vérifiez.", true);
+    const pb = type === "retrait" ? manque("especes", c.remis) : manque(op, c.envoye + c.fraisOrange);
     if (pb) return toast(pb, true);
-    const data = { type, operateur: op, montant: m, frais, reference, tel }; if (client) data.client = client;
+    const data = { type, operateur: op, montant: m, frais, reference, tel };
+    if (type !== "retrait") Object.assign(data, { mode, paye: c.paye, envoye: c.envoye, fraisOrange: c.fraisOrange }); if (client) data.client = client;
     if (nouvelleOp(data)) toast(TYPES[type] + " enregistré.");
     return;
   }
@@ -926,7 +963,7 @@ document.addEventListener("click", async (ev) => {
   }
   if ("verrouiller" in d) { DEVERROUILLE = false; ECRAN = "principal"; return rendre(); }
 });
-document.addEventListener("change", (ev) => { if (ev.target.name === "f-operateur") majCalcul(); });
+document.addEventListener("change", (ev) => { if (ev.target.name === "f-operateur" || ev.target.name === "f-mode") majCalcul(); });
 
 rendre();
 </script>
