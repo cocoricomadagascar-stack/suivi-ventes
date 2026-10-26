@@ -1,0 +1,1040 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FFC72C">
+<title>Cash Point (démo)</title>
+<style>
+  :root{
+    --jaune:#FFC72C; --noir:#1C1A17; --chaux:#FFFDF6; --gris:#6B665C; --ligne:#E8E0C8;
+    --rouge:#E4002B; --orange:#FF7900; --vert:#0B8F3C; --bleu:#2E3192; --alerte:#B3261E;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    background:var(--jaune); color:var(--noir); font-size:16px; line-height:1.4;
+    padding-bottom:env(safe-area-inset-bottom,0px); -webkit-tap-highlight-color:transparent;
+  }
+  body.bloque{overflow:hidden}
+  button,input,select{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:3px solid var(--bleu);outline-offset:2px}
+  [hidden]{display:none!important}
+
+  .enseigne{padding:calc(14px + env(safe-area-inset-top,0px)) 16px 0;max-width:620px;margin:0 auto}
+  .enseigne-ligne{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .logo{font-family:'Arial Black','Arial Bold',Impact,sans-serif;font-weight:900;font-size:1.9rem;line-height:1;margin:0;letter-spacing:.01em}
+  .qui{font-size:.9rem;font-weight:600;margin:4px 0 0}
+  .btn-bord{background:transparent;border:2px solid var(--noir);border-radius:6px;padding:6px 12px;font-weight:700;font-size:.85rem}
+  .bande{display:grid;grid-template-columns:1.1fr 1fr .8fr 1fr;height:10px;margin:12px 0 0;border-radius:2px;overflow:hidden}
+  .bande span:nth-child(1){background:var(--rouge)} .bande span:nth-child(2){background:var(--noir)}
+  .bande span:nth-child(3){background:var(--bleu)} .bande span:nth-child(4){background:var(--vert)}
+  main{max-width:620px;margin:0 auto;padding:14px 14px 40px}
+
+  label{display:block;font-weight:600;font-size:.92rem;margin:12px 0 0}
+  input,select{display:block;width:100%;min-height:50px;margin-top:6px;padding:10px 12px;border:2px solid #CFC6AC;border-radius:8px;background:#fff;font-size:1.1rem}
+  input:focus,select:focus{border-color:var(--noir);outline:none}
+  .aide{font-size:.85rem;color:var(--gris);margin:4px 0 0;font-weight:400}
+  .principal{display:block;width:100%;min-height:54px;margin-top:18px;border:0;border-radius:8px;background:var(--noir);color:var(--jaune);font-weight:800;font-size:1.1rem}
+  .secondaire{display:block;width:100%;min-height:48px;margin-top:10px;border:2px solid var(--noir);border-radius:8px;background:transparent;font-weight:700}
+  .danger-btn{border-color:var(--alerte);color:var(--alerte)}
+  .petit-btn{border:2px solid var(--noir);background:#fff;border-radius:6px;padding:7px 10px;font-weight:700;font-size:.85rem}
+  .petit-btn.plein{background:var(--noir);color:var(--jaune)}
+  .petit-btn.danger{border-color:var(--alerte);color:var(--alerte)}
+
+  .soldes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tuile{border-radius:8px;padding:10px 12px;min-height:76px;display:flex;flex-direction:column;justify-content:space-between}
+  .t-nom{font-size:.85rem;font-weight:700}
+  .t-val{font-size:1.25rem;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .t-val.neg{text-decoration:underline wavy}
+  .t-especes{background:var(--chaux);border:2px solid var(--noir)}
+  .t-mvola{background:var(--vert);color:#fff}
+  .t-orange{background:var(--noir);color:var(--orange)}
+  .t-airtel{background:var(--rouge);color:#fff}
+  .tuile.petit{min-height:58px;padding:8px 10px} .tuile.petit .t-val{font-size:1rem}
+
+  .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+  .act{min-height:64px;border:0;border-radius:8px;background:var(--noir);color:var(--chaux);font-weight:800;font-size:1.05rem;text-align:left;padding:10px 14px;display:flex;flex-direction:column;justify-content:center}
+  .act small{font-weight:500;font-size:.78rem;color:#CFC6AC;margin-top:2px}
+  .act.large{grid-column:1 / -1}
+  .act.cloture{background:transparent;color:var(--noir);border:2px solid var(--noir)}
+  .act.cloture small{color:var(--gris)}
+
+  .panneau{background:var(--chaux);border-radius:10px;padding:14px;margin-top:14px}
+  .panneau h2{font-size:1.15rem;margin:0}
+  .panneau-tete{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .panneau-tete span{font-size:.88rem;color:var(--gris)}
+  .vide{color:var(--gris);margin:10px 0 2px}
+  .op{display:grid;grid-template-columns:6px 1fr auto;gap:10px;padding:10px 0;border-top:1px solid var(--ligne)}
+  .op:first-of-type{border-top:0}
+  .op-barre{border-radius:3px}
+  .c-mvola{background:var(--vert)} .c-orange{background:var(--orange)} .c-airtel{background:var(--rouge)} .c-especes{background:var(--noir)} .c-ajust{background:var(--bleu)}
+  .op-titre{font-weight:700}
+  .op-detail{font-size:.85rem;color:var(--gris);word-break:break-word}
+  .op-droite{text-align:right}
+  .op-montant{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .op-heure{font-size:.8rem;color:var(--gris)}
+  .op-actions{grid-column:2 / -1;display:flex;gap:8px;flex-wrap:wrap}
+  .badge{display:inline-block;font-size:.75rem;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:4px;vertical-align:1px}
+  .b-annulee{background:#F6D4D1;color:var(--alerte)}
+  .b-ok{background:#D4EEDC;color:#0B5E2A}
+  .op.annulee .op-titre,.op.annulee .op-montant{text-decoration:line-through;opacity:.6}
+  .alerte{background:var(--chaux);border-left:6px solid var(--alerte);border-radius:6px;padding:10px 12px;margin:12px 0 0;font-weight:600;font-size:.92rem}
+  .info{background:var(--chaux);border-left:6px solid var(--bleu);border-radius:6px;padding:10px 12px;margin:12px 0 0;font-size:.92rem}
+
+  .onglets{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+  .onglet{flex:0 0 auto;border:2px solid var(--noir);background:transparent;border-radius:999px;padding:8px 14px;font-weight:700}
+  .onglet[aria-selected="true"]{background:var(--noir);color:var(--jaune)}
+  .chiffres{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0 4px;font-size:.92rem}
+  .chiffres b{font-size:1.05rem}
+  .grand-chiffre{font-size:2rem;font-weight:900;font-variant-numeric:tabular-nums;margin:4px 0 0}
+  .rangee-btn{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+  th,td{text-align:right;padding:6px;border-top:1px solid var(--ligne);font-size:.9rem;white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{border-top:0;font-size:.8rem;color:var(--gris);font-weight:700}
+  .neg-txt{color:var(--alerte);font-weight:800}
+  .pos-txt{color:#7A4A00;font-weight:800}
+  .defil{overflow-x:auto}
+  .tarifs input{min-height:40px;font-size:.95rem;padding:6px 8px;min-width:90px;margin:0}
+  .tarifs td{padding:4px}
+  .carte-rapport{display:block;width:100%;text-align:left;background:#fff;border:2px solid var(--ligne);border-radius:8px;padding:10px 12px;margin-top:8px}
+  .carte-rapport b{font-size:1rem}
+
+  .voile{position:fixed;inset:0;background:rgba(28,26,23,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+  .feuille{background:var(--chaux);width:100%;max-width:620px;max-height:92vh;overflow-y:auto;border-radius:14px 14px 0 0;padding:18px 16px calc(24px + env(safe-area-inset-bottom,0px));animation:monte .18s ease-out}
+  @keyframes monte{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+  @media (prefers-reduced-motion:reduce){.feuille{animation:none}}
+  .feuille-tete{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .feuille h2{margin:0;font-size:1.35rem}
+  .fermer{border:0;background:transparent;font-size:1.6rem;line-height:1;padding:4px 8px}
+  .choix{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+  .choix.deux{grid-template-columns:1fr 1fr}
+  .choix input{position:absolute;opacity:0;width:1px;height:1px;min-height:0;margin:0}
+  .choix label{margin:0}
+  .choix span{display:flex;align-items:center;justify-content:center;text-align:center;min-height:52px;border-radius:8px;border:3px solid transparent;font-weight:800;font-size:.95rem;padding:4px;opacity:.55}
+  .choix input:checked + span{opacity:1;border-color:var(--noir);box-shadow:0 0 0 2px var(--chaux) inset}
+  .choix input:focus-visible + span{outline:3px solid var(--bleu);outline-offset:2px}
+  .s-mvola{background:var(--vert);color:#fff} .s-orange{background:var(--noir);color:var(--orange)} .s-airtel{background:var(--rouge);color:#fff}
+  .s-neutre{background:#fff;border-color:#CFC6AC!important;color:var(--noir)}
+  .calcul{background:#fff;border:2px dashed #CFC6AC;border-radius:8px;padding:10px 12px;margin-top:12px;font-size:.95rem}
+  .calcul b{font-size:1.15rem}
+  .calcul.erreur{border-color:var(--alerte);color:var(--alerte);font-weight:700}
+
+  .toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--noir);color:var(--chaux);padding:12px 16px;border-radius:8px;font-weight:600;z-index:40;max-width:92vw;text-align:center}
+  .toast.err{background:var(--alerte);color:#fff}
+  .accueil{min-height:100vh}
+  .accueil .enseigne{padding-top:calc(40px + env(safe-area-inset-top,0px))}
+  .accueil .logo{font-size:2.8rem}
+  .demo-barre{background:#2E3192;color:#fff;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 10px;font-size:.88rem}
+  .demo-barre .demo-in{max-width:620px;margin:0 auto}
+  .demo-barre p{margin:0 0 8px}
+  .demo-roles{display:flex;gap:6px;flex-wrap:wrap}
+  .demo-roles button{border:2px solid #fff;background:transparent;color:#fff;border-radius:999px;padding:6px 12px;font-weight:700;font-size:.85rem}
+  .demo-roles button[aria-pressed="true"]{background:#fff;color:#2E3192}
+  .demo-roles .demo-quitter{margin-left:auto;border-color:#FFC72C;color:#FFC72C}
+  .enseigne{padding-top:14px}
+</style>
+</head>
+<body>
+<div class="demo-barre" role="region" aria-label="Démonstration">
+  <div class="demo-in">
+    <p><b>Version de démonstration.</b> Code du patron : <b>0000</b>. Rien n'est enregistré : tout s'efface quand vous quittez la démo ou fermez la page. Les rapports de clôture arrivent tout seuls sur le téléphone du patron.</p>
+    <div class="demo-roles">
+      <button type="button" data-demo="caisse1" aria-pressed="true">Caissier 1</button>
+      <button type="button" data-demo="caisse2" aria-pressed="false">Caissier 2</button>
+      <button type="button" data-demo="patron" aria-pressed="false">Patron</button>
+      <button type="button" class="demo-quitter" data-demo-quitter>Quitter la démo</button>
+    </div>
+  </div>
+</div>
+
+<header class="enseigne" id="entete">
+  <div class="enseigne-ligne">
+    <div>
+      <h1 class="logo">CASH POINT</h1>
+      <p class="qui" id="qui">MVola, Orange Money, Airtel Money</p>
+    </div>
+    <button class="btn-bord" id="btn-menu" type="button" hidden>Menu</button>
+  </div>
+  <div class="bande" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+</header>
+<main id="vue"></main>
+
+<div id="voile" class="voile" hidden><div class="feuille" role="dialog" aria-modal="true" id="feuille"></div></div>
+<div id="toast" class="toast" hidden role="status"></div>
+<input type="file" id="fichier" accept=".txt,.json,text/plain,application/json,*/*" hidden>
+
+<script>
+"use strict";
+/* ================= Constantes ================= */
+const VERSION = 2;
+const STOCK = "cashpoint_demo_non_utilise";
+// Clé de signature des fichiers : empêche de modifier un rapport sans que le patron le voie.
+const CLE_SIGNATURE = "cP-mG-2026-Rk7#vQ9!tZ3@wL5$hN8";
+const OPERATEURS = { mvola: "MVola", orange: "Orange Money", airtel: "Airtel Money" };
+const COMPTES = { especes: "Espèces", mvola: "MVola", orange: "Orange Money", airtel: "Airtel Money" };
+const CLES = ["especes", "mvola", "orange", "airtel"];
+const TYPES = { depot: "Dépôt sur place", transfert: "Dépôt à distance", retrait: "Retrait", echange: "Échange", mouvement: "Entrée / sortie", ajustement: "Correction des soldes" };
+
+const TARIFS_DEFAUT = [
+  [1001,5000,100,140,500],[5001,10000,100,275,1000],[10001,20000,200,550,1500],
+  [20001,30000,300,1300,2800],[30001,40000,400,1300,3000],[40001,50000,500,1300,3200],
+  [50001,60000,600,1900,4500],[60001,70000,700,1900,4700],[70001,80000,800,1900,4900],
+  [80001,90000,900,1900,5000],[90001,100000,1000,1900,6800],[100001,200000,2000,3400,9000],
+  [200001,300000,3000,4700,12500],[300001,400000,4000,4700,13500],[400001,500000,5000,4700,14500],
+  [500001,600000,6000,8800,23600],[600001,700000,7000,8800,24600],[700001,800000,8000,8800,25600],
+  [800001,900000,9000,8800,26600],[900001,1000000,10000,8800,27600],[1000001,2000000,20000,14700,49500],
+  [2000001,3000000,30000,19600,69500],[3000001,4000000,40000,24500,89000],[4000001,5000000,50000,29400,109000],
+  [5000001,6000000,60000,34300,126600],[6000001,7000000,70000,39200,148500],[7000001,8000000,80000,44100,168500],
+  [8000001,9000000,90000,49000,189000],[9000001,10000000,100000,53900,209000]
+].map(([min,max,depot,transfert,retrait]) => ({ min, max, depot, transfert, retrait }));
+
+/* ================= SHA-256 / HMAC (sans internet, sans dépendance) ================= */
+const K256 = new Uint32Array([
+0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+function sha256(bytes) {
+  const l = bytes.length, n = (((l + 9) + 63) >> 6) << 6;
+  const m = new Uint8Array(n); m.set(bytes); m[l] = 0x80;
+  const dv = new DataView(m.buffer);
+  dv.setUint32(n - 4, (l * 8) >>> 0); dv.setUint32(n - 8, Math.floor(l / 0x20000000));
+  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const w = new Uint32Array(64);
+  const r = (x, k) => (x >>> k) | (x << (32 - k));
+  for (let i = 0; i < n; i += 64) {
+    for (let t = 0; t < 16; t++) w[t] = dv.getUint32(i + t * 4);
+    for (let t = 16; t < 64; t++) {
+      const s0 = r(w[t-15],7) ^ r(w[t-15],18) ^ (w[t-15] >>> 3);
+      const s1 = r(w[t-2],17) ^ r(w[t-2],19) ^ (w[t-2] >>> 10);
+      w[t] = (w[t-16] + s0 + w[t-7] + s1) | 0;
+    }
+    let [a,b,c,d,e,f,g,h] = H;
+    for (let t = 0; t < 64; t++) {
+      const t1 = (h + (r(e,6) ^ r(e,11) ^ r(e,25)) + ((e & f) ^ (~e & g)) + K256[t] + w[t]) | 0;
+      const t2 = ((r(a,2) ^ r(a,13) ^ r(a,22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0]=(H[0]+a)|0; H[1]=(H[1]+b)|0; H[2]=(H[2]+c)|0; H[3]=(H[3]+d)|0; H[4]=(H[4]+e)|0; H[5]=(H[5]+f)|0; H[6]=(H[6]+g)|0; H[7]=(H[7]+h)|0;
+  }
+  const out = new Uint8Array(32); const ov = new DataView(out.buffer);
+  H.forEach((v, i) => ov.setUint32(i * 4, v >>> 0));
+  return out;
+}
+const utf8 = (s) => new TextEncoder().encode(s);
+const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+function hmac(texte) {
+  let k = utf8(CLE_SIGNATURE); if (k.length > 64) k = sha256(k);
+  const kp = new Uint8Array(64); kp.set(k);
+  const ip = kp.map((x) => x ^ 0x36), op = kp.map((x) => x ^ 0x5c);
+  const msg = utf8(texte);
+  const a = new Uint8Array(64 + msg.length); a.set(ip); a.set(msg, 64);
+  const ih = sha256(a);
+  const b = new Uint8Array(96); b.set(op); b.set(ih, 64);
+  return hex(sha256(b));
+}
+const empreinte = (texte) => hex(sha256(utf8(texte)));
+
+/* ================= Stockage local ================= */
+let D = null;
+function charger() { return null; }
+function sauver() {
+  try { PHONES[CUR] = D; return true; }
+  catch (e) { toast("Mémoire pleine : faites une sauvegarde puis effacez les anciens rapports (Réglages).", true); return false; }
+}
+D = charger();
+if (D && D.role && D.grille !== 2) { D.tarifs = TARIFS_DEFAUT; D.tarifsDate = 0; D.grille = 2; try { localStorage.setItem(STOCK, JSON.stringify(D)); } catch (e) {} }
+
+/* ================= Outils ================= */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const nombre = (v) => { const n = parseInt(String(v ?? "").replace(/[^\d]/g, ""), 10); return isNaN(n) ? 0 : n; };
+const fmt = (n) => { const v = Math.round(Number(n) || 0); return (v < 0 ? "-" : "") + Math.abs(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " Ar"; };
+function jourDe(ms) { const x = ms ? new Date(ms) : new Date(); return x.getFullYear() + "-" + String(x.getMonth()+1).padStart(2,"0") + "-" + String(x.getDate()).padStart(2,"0"); }
+const dateLisible = (j) => { const [a, m, d] = j.split("-"); return d + "/" + m + "/" + a; };
+const heure = (ms) => new Date(ms).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const dateHeure = (ms) => dateLisible(jourDe(ms)) + " à " + heure(ms);
+const aleatoire = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), (x) => x.toString(16).padStart(2, "0")).join("");
+const hashCode = (code, sel) => empreinte(sel + ":" + code);
+const zero = () => ({ especes: 0, mvola: 0, orange: 0, airtel: 0 });
+
+let minuterie;
+function toast(msg, err) {
+  const t = $("#toast"); t.textContent = msg; t.className = "toast" + (err ? " err" : ""); t.hidden = false;
+  clearTimeout(minuterie); minuterie = setTimeout(() => { t.hidden = true; }, err ? 6000 : 3000);
+}
+window.erreurAndroid = (m) => toast("Erreur : " + m, true);
+
+function fraisPour(type, montant, tarifs) {
+  if (!["depot", "transfert", "retrait"].includes(type)) return 0;
+  const l = (tarifs || D.tarifs).find((t) => montant >= Number(t.min) && montant <= Number(t.max));
+  return l ? (Number(l[type]) || 0) : null;
+}
+const ligneTarif2 = (m) => D.tarifs.find((t) => m >= Number(t.min) && m <= Number(t.max)) || null;
+const MODES = { plus: "frais payés en plus", deduit: "frais déduits", intact: "montant intact (retrait compris)" };
+// Calcul d'une opération Dépôt (sur place / à distance) ou Retrait
+function calculOp(type, mode, m, envoyeSaisi) {
+  const t = ligneTarif2(m); if (!t) return null;
+  const dep = Number(t.depot) || 0, tr = Number(t.transfert) || 0, al = Number(t.retrait) || 0;
+  if (type === "retrait") return { paye: 0, envoye: 0, fraisOrange: 0, frais: al, remis: m - al };
+  if (type === "depot") return mode === "deduit" ? { paye: m, envoye: m - dep, fraisOrange: 0, frais: dep } : { paye: m + dep, envoye: m, fraisOrange: 0, frais: dep };
+  if (mode === "deduit") return { paye: m, envoye: m - dep - tr, fraisOrange: tr, frais: dep };
+  if (mode === "intact") {
+    const env = envoyeSaisi || m, t2 = ligneTarif2(env), fo = t2 ? Number(t2.transfert) || 0 : tr;
+    return { paye: m + al, envoye: env, fraisOrange: fo, frais: m + al - env - fo };
+  }
+  return { paye: m + dep + tr, envoye: m, fraisOrange: tr, frais: dep };
+}
+function effets(op) {
+  const e = zero(), m = Number(op.montant) || 0, f = Number(op.frais) || 0;
+  if ((op.type === "depot" || op.type === "transfert") && op.paye !== undefined) {
+    e[op.operateur] -= (Number(op.envoye) || 0) + (Number(op.fraisOrange) || 0); e.especes += Number(op.paye) || 0; return e;
+  }
+  switch (op.type) {
+    case "depot": case "transfert": e[op.operateur] -= m; e.especes += m + f; break;
+    case "retrait": e[op.operateur] += m; e.especes += f - m; break;
+    case "echange": e[op.de] -= m; e[op.vers] += m; break;
+    case "mouvement": e[op.compte] += (op.sens === "entree" ? m : -m); break;
+    case "ajustement": CLES.forEach((k) => { e[k] += Number(op.delta?.[k]) || 0; }); break;
+  }
+  return e;
+}
+function appliquer(depart, ops) {
+  const s = {}; CLES.forEach((k) => { s[k] = Number(depart?.[k]) || 0; });
+  ops.forEach((op) => { if (op.statut === "annulee") return; const e = effets(op); CLES.forEach((k) => { s[k] += e[k]; }); });
+  return s;
+}
+const fraisTotal = (ops) => ops.filter((o) => o.statut !== "annulee").reduce((a, o) => a + (Number(o.frais) || 0), 0);
+const rapportDe = (r) => JSON.parse(JSON.parse(r.fichier).donnees);
+const valides = (ops) => ops.filter((o) => o.statut !== "annulee" && o.type !== "ajustement");
+
+/* ================= Fichiers (envoi par Xender / Bluetooth / WhatsApp) ================= */
+function emballer(objet) {
+  const donnees = JSON.stringify(objet);
+  return JSON.stringify({ app: "cashpoint", v: VERSION, donnees, sig: hmac(donnees) });
+}
+function deballer(texte) {
+  let env;
+  try { env = JSON.parse(texte); } catch (e) { throw new Error("Ce fichier n'est pas un fichier Cash Point."); }
+  if (!env || env.app !== "cashpoint" || typeof env.donnees !== "string") throw new Error("Ce fichier n'est pas un fichier Cash Point.");
+  if (hmac(env.donnees) !== env.sig) throw new Error("Fichier refusé : il a été modifié après sa création.");
+  return { objet: JSON.parse(env.donnees), hash: empreinte(env.donnees) };
+}
+function partager(nom, contenu) {
+  if (demoPartager(contenu)) return;
+  if (window.Android && typeof window.Android.partager === "function") { window.Android.partager(nom, contenu); return; }
+  const url = URL.createObjectURL(new Blob([contenu], { type: "text/plain" }));
+  const a = document.createElement("a"); a.href = url; a.download = nom; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast("Fichier enregistré dans les téléchargements.");
+}
+let apresLecture = null;
+function choisirFichier(fn) { apresLecture = fn; const f = $("#fichier"); f.value = ""; f.click(); }
+$("#fichier").addEventListener("change", () => {
+  const f = $("#fichier").files[0]; if (!f || !apresLecture) return;
+  const lecteur = new FileReader();
+  lecteur.onload = () => { const fn = apresLecture; apresLecture = null; try { fn(String(lecteur.result)); } catch (e) { toast(e.message, true); } };
+  lecteur.onerror = () => toast("Impossible de lire ce fichier.", true);
+  lecteur.readAsText(f);
+});
+
+/* ================= Feuilles et confirmations ================= */
+function ouvrir(html) { $("#feuille").innerHTML = html; $("#voile").hidden = false; document.body.classList.add("bloque"); }
+function fermer() { $("#voile").hidden = true; $("#feuille").innerHTML = ""; document.body.classList.remove("bloque"); }
+$("#voile").addEventListener("click", (e) => { if (e.target.id === "voile") fermer(); });
+const tete = (t) => `<div class="feuille-tete"><h2>${t}</h2><button class="fermer" type="button" data-fermer aria-label="Fermer">×</button></div>`;
+function demander(message, libelle) {
+  return new Promise((ok) => {
+    ouvrir(`<div class="feuille-tete"><h2>Confirmer</h2></div><p>${esc(message)}</p>
+      <button class="principal" type="button" id="dlg-ok">${esc(libelle)}</button>
+      <button class="secondaire" type="button" id="dlg-non">Retour</button>`);
+    $("#dlg-ok").onclick = () => { fermer(); ok(true); };
+    $("#dlg-non").onclick = () => { fermer(); ok(false); };
+  });
+}
+function demanderCodePatron(titre) {
+  return new Promise((ok) => {
+    ouvrir(`${tete(esc(titre || "Code du patron"))}
+      <form id="f-code" novalidate><p class="aide">Cette partie est réservée au patron.</p>
+      <label for="code-p">Code du patron<input id="code-p" type="password" inputmode="numeric" autocomplete="off"></label>
+      <button class="principal" type="submit">Valider</button></form>`);
+    setTimeout(() => $("#code-p") && $("#code-p").focus(), 60);
+    $("#f-code").onsubmit = (e) => {
+      e.preventDefault();
+      if (hashCode($("#code-p").value.trim(), D.sel) === D.codePatron) { fermer(); ok(true); }
+      else toast("Code incorrect.", true);
+    };
+  });
+}
+// Bouton retour d'Android
+window.retour = function () {
+  if (!$("#voile").hidden) { fermer(); return true; }
+  if (ECRAN !== "principal") { ECRAN = "principal"; rendre(); return true; }
+  return false;
+};
+
+/* ================= Navigation ================= */
+let ECRAN = "principal", ONGLET = "benefices", RAPPORT_OUVERT = null, DEVERROUILLE = false;
+const choixComptes = (id, sel) => `<select id="${id}">${CLES.map((k) => `<option value="${k}" ${k === sel ? "selected" : ""}>${COMPTES[k]}</option>`).join("")}</select>`;
+function tuiles(s, petit) {
+  return CLES.map((k) => `<div class="tuile t-${k}${petit ? " petit" : ""}"><span class="t-nom">${COMPTES[k]}</span><strong class="t-val${s[k] < 0 ? " neg" : ""}">${fmt(s[k])}</strong></div>`).join("");
+}
+function rendre() {
+  const menu = $("#btn-menu");
+  if (!D || !D.role) { menu.hidden = true; $("#qui").textContent = "MVola, Orange Money, Airtel Money"; return rendreConfig(); }
+  if (D.role === "patron" && !DEVERROUILLE) { menu.hidden = true; $("#qui").textContent = "Téléphone du patron"; return rendreVerrou(); }
+  menu.hidden = false;
+  if (D.role === "caisse") return rendreCaisse();
+  return rendrePatron();
+}
+
+/* ================= Configuration du téléphone (première ouverture) ================= */
+function rendreConfig() {
+  $("#vue").innerHTML = `
+    <section class="panneau">
+      <h2>Bienvenue</h2>
+      <p class="aide">Cette application fonctionne sans internet. Choisissez à qui appartient ce téléphone. Cette étape se fait une seule fois, en présence du patron.</p>
+      <button class="principal" type="button" data-config="caisse">Téléphone d'un caissier</button>
+      <button class="secondaire" type="button" data-config="patron">Téléphone du patron</button>
+    </section>`;
+}
+function formConfig(role) {
+  const commun = `
+    <label for="c-code">Code du patron (4 chiffres ou plus)<input id="c-code" type="password" inputmode="numeric" autocomplete="off"></label>
+    <label for="c-code2">Retaper le code du patron<input id="c-code2" type="password" inputmode="numeric" autocomplete="off"><span class="aide">Le patron tape son code lui-même. Il servira à protéger les réglages.</span></label>`;
+  if (role === "patron") {
+    ouvrir(`${tete("Téléphone du patron")}<form id="f-config" data-role="patron" novalidate>
+      <label for="c-n1">Nom du point de vente 1<input id="c-n1" value="Point de vente 1"></label>
+      <label for="c-n2">Nom du point de vente 2<input id="c-n2" value="Point de vente 2"></label>
+      ${commun}<button class="principal" type="submit">Terminer</button></form>`);
+  } else {
+    ouvrir(`${tete("Téléphone d'un caissier")}<form id="f-config" data-role="caisse" novalidate>
+      <div class="choix deux" role="radiogroup" aria-label="Point de vente">
+        <label><input type="radio" name="c-point" value="p1"><span class="s-neutre">Point de vente 1</span></label>
+        <label><input type="radio" name="c-point" value="p2"><span class="s-neutre">Point de vente 2</span></label>
+      </div>
+      <label for="c-np">Nom du point de vente<input id="c-np" placeholder="ex. Analakely"></label>
+      <label for="c-nom">Nom du caissier<input id="c-nom" autocomplete="off"></label>
+      <p class="aide" style="margin-top:14px"><b>Soldes de départ</b> : comptez la caisse et regardez le vrai solde de chaque puce.</p>
+      ${CLES.map((k) => `<label for="c-s-${k}">${COMPTES[k]}<input id="c-s-${k}" inputmode="numeric" autocomplete="off"></label>`).join("")}
+      ${commun}<button class="principal" type="submit">Terminer</button></form>`);
+  }
+}
+function enregistrerConfig(f) {
+  const role = f.dataset.role, code = $("#c-code").value.trim();
+  if (code.length < 4) return toast("Le code du patron doit avoir au moins 4 caractères.", true);
+  if (code !== $("#c-code2").value.trim()) return toast("Les deux codes ne sont pas identiques.", true);
+  const sel = aleatoire();
+  const base = { v: VERSION, grille: 2, role, sel, codePatron: hashCode(code, sel), appareil: aleatoire(), tarifs: TARIFS_DEFAUT, tarifsDate: 0, cree: Date.now() };
+  if (role === "patron") {
+    D = Object.assign(base, { noms: { p1: $("#c-n1").value.trim() || "Point de vente 1", p2: $("#c-n2").value.trim() || "Point de vente 2" }, rapports: [] });
+    DEVERROUILLE = true;
+  } else {
+    const point = (f.querySelector("input[name=c-point]:checked") || {}).value;
+    if (!point) return toast("Choisissez le point de vente.", true);
+    const nom = $("#c-nom").value.trim();
+    if (!nom) return toast("Tapez le nom du caissier.", true);
+    for (const k of CLES) if (!$("#c-s-" + k).value.trim()) return toast("Tapez le solde de départ pour " + COMPTES[k] + " (0 si vide).", true);
+    const ouverture = {}; CLES.forEach((k) => { ouverture[k] = nombre($("#c-s-" + k).value); });
+    D = Object.assign(base, { point, nomPoint: $("#c-np").value.trim() || (point === "p1" ? "Point de vente 1" : "Point de vente 2"), caissier: nom,
+      ouverture, debut: Date.now(), ops: [], seq: 0, seqDebut: 1, rapportNo: 0, dernierHash: "", rapports: [] });
+  }
+  if (!sauver()) return;
+  fermer(); ECRAN = "principal"; rendre(); toast("Téléphone configuré.");
+}
+
+/* ================= Verrou du patron ================= */
+function rendreVerrou() {
+  $("#vue").innerHTML = `<form id="f-verrou" class="panneau" novalidate>
+    <h2>Ouvrir</h2>
+    <label for="v-code">Code du patron<input id="v-code" type="password" inputmode="numeric" autocomplete="off"></label>
+    <button class="principal" type="submit">Ouvrir</button></form>`;
+}
+
+/* ================= Écran caissier ================= */
+function soldesCaisse() { return appliquer(D.ouverture, D.ops); }
+function rendreCaisse() {
+  $("#qui").textContent = D.nomPoint + ", " + D.caissier;
+  if (ECRAN === "rapports") return rendreRapportsCaisse();
+  const s = soldesCaisse(), ops = D.ops.slice().reverse(), frais = fraisTotal(D.ops), nb = valides(D.ops).length;
+  $("#vue").innerHTML = `
+    <section class="soldes" aria-label="Soldes actuels">${tuiles(s)}</section>
+    <section class="actions">
+      <button class="act" data-form="depot">Dépôt sur place<small>sur le compte du client</small></button>
+      <button class="act" data-form="transfert">Dépôt à distance<small>vers un autre numéro</small></button>
+      <button class="act" data-form="retrait">Retrait<small>le client reçoit des espèces</small></button>
+      <button class="act" data-form="echange">Échange<small>espèces et puces</small></button>
+      <button class="act large" data-form="mouvement">Entrée / sortie d'argent<small>apport, dépense, prélèvement</small></button>
+      <button class="act large cloture" data-form="cloture">Clôturer la journée<small>compter, puis envoyer le rapport au patron</small></button>
+    </section>
+    <section class="panneau">
+      <div class="panneau-tete"><h2>Journée en cours</h2><span>depuis le ${dateHeure(D.debut)}</span></div>
+      <div class="chiffres"><span><b>${nb}</b> opération${nb > 1 ? "s" : ""}</span><span><b>${fmt(frais)}</b> de bénéfice</span></div>
+      ${ops.length ? ops.map((o) => ligneOp(o, "caisse")).join("") : `<p class="vide">Aucune opération. Touchez Dépôt ou Retrait pour commencer.</p>`}
+    </section>`;
+}
+function rendreRapportsCaisse() {
+  const r = D.rapports.slice().reverse();
+  $("#vue").innerHTML = `<section class="panneau">
+    <div class="panneau-tete"><h2>Rapports de clôture</h2><button class="petit-btn" data-retour>Retour</button></div>
+    <p class="aide">Touchez « Envoyer » pour renvoyer un rapport au patron (Xender, Bluetooth, WhatsApp).</p>
+    ${r.length ? r.map((x) => { const o = rapportDe(x); return `<div class="carte-rapport">
+      <b>Rapport n°${o.no}, ${dateHeure(o.fin)}</b><div class="op-detail">${valides(o.ops).length} opérations, ${fmt(o.frais)} de frais, écart ${fmt(CLES.reduce((a, k) => a + o.ecart[k], 0))}</div>
+      <div class="rangee-btn"><button class="petit-btn plein" data-renvoyer="${o.no}">Envoyer</button></div></div>`; }).join("") : `<p class="vide">Aucun rapport pour l'instant.</p>`}
+  </section>`;
+}
+function ligneOp(o, mode) {
+  let titre = "", detail = "";
+  if (["depot", "transfert", "retrait"].includes(o.type)) {
+    titre = TYPES[o.type] + " " + OPERATEURS[o.operateur];
+    detail = [o.tel, o.client, o.reference ? "Réf. " + o.reference : ""].filter(Boolean).join(", ");
+    if (o.paye !== undefined) detail += (detail ? ", " : "") + (MODES[o.mode] || "") + ", client a payé " + fmt(o.paye) + ", envoyé " + fmt(o.envoye) + (o.fraisOrange ? ", frais opérateur " + fmt(o.fraisOrange) : "") + ", bénéfice " + fmt(o.frais);
+    else if (o.frais) detail += ", frais " + fmt(o.frais);
+  } else if (o.type === "echange") { titre = "Échange " + COMPTES[o.de] + " vers " + COMPTES[o.vers]; detail = o.motif || ""; }
+  else if (o.type === "mouvement") { titre = (o.sens === "entree" ? "Entrée " : "Sortie ") + COMPTES[o.compte]; detail = o.motif || ""; }
+  else { titre = "Correction des soldes par le patron"; detail = CLES.filter((k) => o.delta[k]).map((k) => COMPTES[k] + " " + (o.delta[k] > 0 ? "+" : "") + fmt(o.delta[k])).join(", ") || "aucun changement"; }
+  const badge = o.statut === "annulee" ? `<span class="badge b-annulee">annulée</span>` : "";
+  const motif = o.statut === "annulee" ? `<div class="op-detail">Annulée : ${esc(o.motifAnnulation)}</div>` : "";
+  const barre = o.type === "ajustement" ? "ajust" : (o.operateur || (o.type === "echange" ? o.vers : o.compte) || "especes");
+  const montant = o.type === "ajustement" ? "" : fmt(o.montant);
+  const actions = (mode === "caisse" && o.statut !== "annulee" && o.type !== "ajustement") ? `<div class="op-actions"><button class="petit-btn" data-annuler="${o.seq}">Annuler (erreur)</button></div>` : "";
+  return `<div class="op${o.statut === "annulee" ? " annulee" : ""}"><span class="op-barre c-${barre}"></span>
+    <div><div class="op-titre">${esc(titre)}${badge}</div><div class="op-detail">${esc(detail)}</div>${motif}</div>
+    <div class="op-droite"><div class="op-montant">${montant}</div><div class="op-heure">${heure(o.date)}</div></div>${actions}</div>`;
+}
+
+/* ---- Formulaires d'opérations ---- */
+const LIBELLES = {
+  depot: { montant: "Montant à déposer (Ar)", bouton: "Enregistrer le dépôt" },
+  transfert: { montant: "Montant à envoyer (Ar)", bouton: "Enregistrer le dépôt à distance" },
+  retrait: { montant: "Montant reçu sur votre puce (Ar)", bouton: "Enregistrer le retrait" }
+};
+function formOperateur(type) {
+  ouvrir(`${tete(TYPES[type])}<form id="f-op" data-type="${type}" novalidate>
+    <div class="choix" role="radiogroup" aria-label="Opérateur">
+      ${Object.entries(OPERATEURS).map(([k, n]) => `<label><input type="radio" name="f-operateur" value="${k}"><span class="s-${k}">${n}</span></label>`).join("")}
+    </div>
+    <label for="f-montant">${LIBELLES[type].montant}<input id="f-montant" inputmode="numeric" autocomplete="off"></label>
+    ${type === "retrait" ? "" : `<p class="aide" style="margin-top:12px"><b>Les frais</b></p><div class="choix ${type === "transfert" ? "" : "deux"}" role="radiogroup" aria-label="Frais">
+      <label><input type="radio" name="f-mode" value="plus" checked><span class="s-neutre">Payés en plus</span></label>
+      <label><input type="radio" name="f-mode" value="deduit"><span class="s-neutre">Déduits du montant</span></label>
+      ${type === "transfert" ? `<label><input type="radio" name="f-mode" value="intact"><span class="s-neutre">Montant intact (retrait compris)</span></label>` : ""}
+    </div>`}
+    ${type === "transfert" ? `<label for="f-envoye" id="f-envoye-l" hidden>Montant réellement envoyé (voir le SMS)<input id="f-envoye" inputmode="numeric" autocomplete="off"></label>` : ""}
+    <div class="calcul" id="f-calcul">Choisissez l'opérateur et tapez le montant.</div>
+    <label for="f-ref">Référence de la transaction<input id="f-ref" autocapitalize="characters" autocomplete="off"><span class="aide">Le numéro de transaction du SMS de l'opérateur.</span></label>
+    <label for="f-tel">Numéro du client<input id="f-tel" inputmode="tel" autocomplete="off"></label>
+    <label for="f-nom">Nom du client (facultatif)<input id="f-nom" autocomplete="off"></label>
+    <button class="principal" type="submit">${LIBELLES[type].bouton}</button></form>`);
+  $("#f-montant").addEventListener("input", majCalcul);
+  if ($("#f-envoye")) $("#f-envoye").addEventListener("input", majCalcul);
+}
+function majCalcul() {
+  const f = $("#f-op"); if (!f) return;
+  const type = f.dataset.type, m = nombre($("#f-montant").value), box = $("#f-calcul");
+  const mode = (f.querySelector("input[name=f-mode]:checked") || {}).value;
+  const envL = $("#f-envoye-l"); if (envL) envL.hidden = mode !== "intact";
+  const c = calculOp(type, mode, m, mode === "intact" ? nombre($("#f-envoye").value) : 0);
+  box.classList.remove("erreur");
+  if (!m) { box.textContent = "Choisissez l'opérateur et tapez le montant."; return; }
+  if (!c) { box.classList.add("erreur"); box.textContent = "Montant hors grille : entre " + fmt(D.tarifs[0].min) + " et " + fmt(D.tarifs[D.tarifs.length - 1].max) + "."; return; }
+  if (type === "retrait") { box.innerHTML = `Frais : <b>${fmt(c.frais)}</b><br>À remettre au client : <b>${fmt(c.remis)}</b>`; return; }
+  box.innerHTML = `Le client paie : <b>${fmt(c.paye)}</b><br>Montant à envoyer : <b>${fmt(c.envoye)}</b>` +
+    (c.fraisOrange ? `<br>Frais pris par l'opérateur sur la puce : ${fmt(c.fraisOrange)}` : "") +
+    `<br>Bénéfice : <b>${fmt(c.frais)}</b>`;
+  if (c.envoye <= 0 || c.frais < 0) { box.classList.add("erreur"); box.innerHTML += "<br>Attention : montant trop petit ou bénéfice négatif."; }
+}
+function formEchange() {
+  ouvrir(`${tete("Échange")}<form id="f-echange" novalidate>
+    <p class="aide">Pour transformer des espèces en crédit sur une puce, ou l'inverse.</p>
+    <label for="e-de">L'argent sort de${choixComptes("e-de", "especes")}</label>
+    <label for="e-vers">L'argent entre dans${choixComptes("e-vers", "mvola")}</label>
+    <label for="e-montant">Montant (Ar)<input id="e-montant" inputmode="numeric" autocomplete="off"></label>
+    <label for="e-motif">Remarque (facultatif)<input id="e-motif" autocomplete="off"></label>
+    <button class="principal" type="submit">Enregistrer l'échange</button></form>`);
+}
+function formMouvement() {
+  ouvrir(`${tete("Entrée / sortie d'argent")}<form id="f-mouv" novalidate>
+    <div class="choix deux" role="radiogroup" aria-label="Sens">
+      <label><input type="radio" name="m-sens" value="entree"><span class="s-neutre">Entrée d'argent</span></label>
+      <label><input type="radio" name="m-sens" value="sortie"><span class="s-neutre">Sortie d'argent</span></label>
+    </div>
+    <label for="m-compte">Compte${choixComptes("m-compte", "especes")}</label>
+    <label for="m-montant">Montant (Ar)<input id="m-montant" inputmode="numeric" autocomplete="off"></label>
+    <label for="m-motif">Motif<input id="m-motif" autocomplete="off" placeholder="ex. apport du patron, dépense"></label>
+    <button class="principal" type="submit">Enregistrer</button></form>`);
+}
+function formCloture() {
+  const s = soldesCaisse();
+  ouvrir(`${tete("Clôturer la journée")}<form id="f-cloture" novalidate>
+    <p class="aide">Comptez les espèces de la caisse et regardez le vrai solde de chaque puce, puis tapez les montants.</p>
+    ${CLES.map((k) => `<label for="k-${k}">${COMPTES[k]} réellement présent<input id="k-${k}" inputmode="numeric" autocomplete="off"><span class="aide" id="k-${k}-info">Calculé par l'application : ${fmt(s[k])}</span></label>`).join("")}
+    <label for="k-rq">Remarque (facultatif)<input id="k-rq" autocomplete="off"></label>
+    <button class="principal" type="submit">Clôturer et créer le rapport</button></form>`);
+  CLES.forEach((k) => $("#k-" + k).addEventListener("input", () => {
+    const form = $("#f-cloture"); if (form.dataset.confirme === "1") { form.dataset.confirme = ""; const b = $("#k-alerte"); if (b) b.remove(); form.querySelector("button[type=submit]").textContent = "Clôturer et créer le rapport"; }
+    const v = $("#k-" + k).value.trim(), info = $("#k-" + k + "-info");
+    info.textContent = v ? "Calculé : " + fmt(s[k]) + ". Écart : " + fmt(nombre(v) - s[k]) : "Calculé par l'application : " + fmt(s[k]);
+  }));
+}
+function formAnnuler(seq) {
+  ouvrir(`${tete("Annuler une opération")}<form id="f-annul" data-seq="${seq}" novalidate>
+    <p class="aide">L'opération reste visible dans le rapport du patron, barrée, avec le motif.</p>
+    <label for="a-motif">Motif<input id="a-motif" autocomplete="off" placeholder="ex. erreur de montant"></label>
+    <button class="principal" type="submit">Annuler l'opération</button></form>`);
+}
+function nouvelleOp(data) {
+  D.seq += 1;
+  const op = Object.assign({ seq: D.seq, date: Date.now(), statut: "valide" }, data);
+  D.ops.push(op);
+  if (sauver()) { fermer(); rendre(); return true; }
+  D.ops.pop(); D.seq -= 1; return false;
+}
+function manque(compte, montant) {
+  const s = soldesCaisse();
+  return s[compte] < montant ? "Solde " + COMPTES[compte] + " insuffisant (" + fmt(s[compte]) + ")." : null;
+}
+
+/* ---- Clôture et rapport ---- */
+function cloturer() {
+  const s = soldesCaisse(), compte = {}, ecart = {}, theorique = {};
+  for (const k of CLES) {
+    if (!$("#k-" + k).value.trim()) return toast("Tapez le montant pour " + COMPTES[k] + " (0 si vide).", true);
+    compte[k] = nombre($("#k-" + k).value); theorique[k] = Math.round(s[k]); ecart[k] = compte[k] - theorique[k];
+  }
+  // Sécurité contre les fautes de frappe : un gros écart doit être confirmé.
+  const gros = CLES.filter((k) => Math.abs(ecart[k]) >= 10000);
+  const form = $("#f-cloture");
+  if (gros.length && form.dataset.confirme !== "1") {
+    let box = $("#k-alerte");
+    if (!box) { box = document.createElement("p"); box.id = "k-alerte"; box.className = "alerte"; form.querySelector("button[type=submit]").before(box); }
+    box.innerHTML = "Écart important : " + gros.map((k) => esc(COMPTES[k]) + " " + fmt(ecart[k])).join(", ") + ".<br>Vérifiez les montants (un zéro oublié ?). Si c'est juste, touchez « Je confirme ».";
+    form.querySelector("button[type=submit]").textContent = "Je confirme, clôturer";
+    form.dataset.confirme = "1";
+    box.scrollIntoView({ block: "center" });
+    return;
+  }
+  const fin = Date.now();
+  const rapport = {
+    type: "rapport", v: VERSION, appareil: D.appareil, point: D.point, nomPoint: D.nomPoint, caissier: D.caissier,
+    no: D.rapportNo + 1, precedent: D.dernierHash, debut: D.debut, fin, jour: jourDe(fin),
+    seqDebut: D.seqDebut, seqFin: D.seq, ouverture: D.ouverture, ops: D.ops, theorique, compte, ecart,
+    frais: fraisTotal(D.ops), remarque: $("#k-rq").value.trim()
+  };
+  const donnees = JSON.stringify(rapport);
+  const fichier = JSON.stringify({ app: "cashpoint", v: VERSION, donnees, sig: hmac(donnees) });
+  const ancien = { ouverture: D.ouverture, ops: D.ops, debut: D.debut, seqDebut: D.seqDebut, rapportNo: D.rapportNo, dernierHash: D.dernierHash, rapports: D.rapports };
+  D.rapports = D.rapports.concat([{ fichier }]).slice(-40);
+  D.rapportNo = rapport.no; D.dernierHash = empreinte(donnees);
+  D.ouverture = compte; D.ops = []; D.debut = fin; D.seqDebut = D.seq + 1;
+  if (!sauver()) { Object.assign(D, ancien); return; }
+  fermer(); rendre();
+  ouvrir(`${tete("Rapport prêt")}<p>Le rapport n°${rapport.no} est créé. Envoyez-le maintenant au patron.</p>
+    <div class="chiffres"><span><b>${valides(rapport.ops).length}</b> opérations</span><span><b>${fmt(rapport.frais)}</b> de frais</span></div>
+    <button class="principal" type="button" data-renvoyer="${rapport.no}">Envoyer au patron (Xender, Bluetooth…)</button>
+    <p class="aide">Vous pourrez le renvoyer plus tard depuis Menu, puis Rapports de clôture.</p>`);
+}
+function nomFichierRapport(o) { return "CashPoint_Rapport_" + (o.point === "p1" ? "PV1" : "PV2") + "_" + o.jour + "_n" + o.no + ".txt"; }
+function renvoyer(no) {
+  const r = D.rapports.find((x) => rapportDe(x).no === Number(no));
+  if (!r) return toast("Rapport introuvable.", true);
+  partager(nomFichierRapport(rapportDe(r)), r.fichier);
+}
+
+/* ---- Menu et réglages du caissier ---- */
+function menuCaisse() {
+  ouvrir(`${tete("Menu")}
+    <button class="secondaire" type="button" data-ecran="rapports">Rapports de clôture</button>
+    <button class="secondaire" type="button" data-recevoir-tarifs>Recevoir les tarifs du patron</button>
+    <button class="secondaire" type="button" data-reglages-caisse>Réglages (patron)</button>
+    <p class="aide">Tarifs du ${D.tarifsDate ? dateHeure(D.tarifsDate) : "départ (photo)"}.</p>`);
+}
+function reglagesCaisse() {
+  ouvrir(`${tete("Réglages (patron)")}
+    <button class="secondaire" type="button" data-fixer>Corriger les soldes</button>
+    <button class="secondaire" type="button" data-tarifs-caisse>Modifier les tarifs sur ce téléphone</button>
+    <button class="secondaire" type="button" data-nom-caissier>Changer le nom du caissier</button>
+    <button class="secondaire danger-btn" type="button" data-reset>Réinitialiser ce téléphone</button>`);
+}
+function formFixer() {
+  const s = soldesCaisse();
+  ouvrir(`${tete("Corriger les soldes")}<form id="f-fixer" novalidate>
+    <p class="aide">Tapez les montants réels à cet instant. La correction apparaîtra dans le rapport du patron.</p>
+    ${CLES.map((k) => `<label for="x-${k}">${COMPTES[k]}<input id="x-${k}" inputmode="numeric" value="${Math.max(0, Math.round(s[k]))}" autocomplete="off"></label>`).join("")}
+    <button class="principal" type="submit">Enregistrer</button></form>`);
+}
+
+/* ================= Écran patron ================= */
+function rendrePatron() {
+  $("#qui").textContent = "Patron";
+  if (ECRAN === "rapport" && RAPPORT_OUVERT) return rendreDetailRapport();
+  const onglets = [["benefices", "Bénéfices"], ["rapports", "Rapports"], ["tarifs", "Tarifs"], ["reglages", "Réglages"]];
+  let corps = ONGLET === "benefices" ? vueBenefices() : ONGLET === "rapports" ? vueRapports() : ONGLET === "tarifs" ? vueTarifs() : vueReglages();
+  $("#vue").innerHTML = `<nav class="onglets" role="tablist">${onglets.map(([k, t]) => `<button class="onglet" role="tab" aria-selected="${ONGLET === k}" data-onglet="${k}">${t}</button>`).join("")}</nav>
+    <button class="principal" type="button" data-importer>Recevoir un rapport de caissier</button>${corps}`;
+}
+function rapportsTries() { return D.rapports.map((r) => r.o).sort((a, b) => b.fin - a.fin); }
+function ecartTotal(o) { return CLES.reduce((a, k) => a + (Number(o.ecart[k]) || 0), 0); }
+function vueBenefices() {
+  const parJour = {};
+  D.rapports.forEach(({ o }) => {
+    const j = parJour[o.jour] = parJour[o.jour] || { p1: [], p2: [] };
+    j[o.point].push(o);
+  });
+  const jours = Object.keys(parJour).sort().reverse();
+  if (!jours.length) return `<section class="panneau"><h2>Bénéfices</h2><p class="vide">Aucun rapport reçu. Le soir, chaque caissier clôture sa journée et vous envoie son rapport par Xender ou Bluetooth. Touchez « Recevoir un rapport de caissier » pour l'ouvrir.</p></section>`;
+  const auj = parJour[jourDe()];
+  const totalAuj = auj ? ["p1", "p2"].reduce((a, p) => a + auj[p].reduce((b, o) => b + o.frais, 0), 0) : 0;
+  let html = `<section class="panneau"><h2>Bénéfice d'aujourd'hui</h2><p class="grand-chiffre">${fmt(totalAuj)}</p>
+    <p class="aide">Somme des frais encaissés dans les rapports reçus pour aujourd'hui.</p></section>`;
+  jours.slice(0, 31).forEach((j) => {
+    const x = parJour[j];
+    const ligne = (p) => {
+      const rs = x[p]; if (!rs.length) return `<tr><td>${esc(D.noms[p])}</td><td colspan="3" style="text-align:left;color:var(--gris)">rapport non reçu</td></tr>`;
+      const fr = rs.reduce((a, o) => a + o.frais, 0), nb = rs.reduce((a, o) => a + valides(o.ops).length, 0), ec = rs.reduce((a, o) => a + ecartTotal(o), 0);
+      return `<tr><td>${esc(D.noms[p])}</td><td>${nb}</td><td>${fmt(fr)}</td><td class="${ec < 0 ? "neg-txt" : ec > 0 ? "pos-txt" : ""}">${fmt(ec)}</td></tr>`;
+    };
+    const tot = ["p1", "p2"].reduce((a, p) => a + x[p].reduce((b, o) => b + o.frais, 0), 0);
+    html += `<section class="panneau"><div class="panneau-tete"><h2>${dateLisible(j)}</h2><span>Total : <b>${fmt(tot)}</b></span></div>
+      <div class="defil"><table><thead><tr><th>Point</th><th>Opér.</th><th>Bénéfice</th><th>Écart</th></tr></thead><tbody>${ligne("p1")}${ligne("p2")}</tbody></table></div></section>`;
+  });
+  return html;
+}
+function vueRapports() {
+  const rs = rapportsTries();
+  return `<section class="panneau"><div class="panneau-tete"><h2>Rapports reçus</h2><span>${rs.length}</span></div>
+    ${rs.length ? rs.map((o) => { const al = alertesRapport(o), ec = ecartTotal(o); return `<button class="carte-rapport" type="button" data-rapport="${o.appareil}:${o.no}">
+      <b>${esc(D.noms[o.point])}, ${esc(o.caissier)}</b>
+      <div class="op-detail">${dateHeure(o.fin)}, rapport n°${o.no}</div>
+      <div class="chiffres"><span><b>${fmt(o.frais)}</b> de frais</span><span class="${ec < 0 ? "neg-txt" : ""}">écart ${fmt(ec)}</span></div>
+      ${al.length ? `<div class="neg-txt" style="font-size:.85rem">⚠ ${al.length} alerte${al.length > 1 ? "s" : ""}</div>` : ""}</button>`; }).join("") : `<p class="vide">Aucun rapport reçu.</p>`}
+  </section>`;
+}
+function alertesRapport(o) {
+  const al = [];
+  const memes = D.rapports.map((r) => r.o).filter((x) => x.appareil === o.appareil);
+  const prec = memes.find((x) => x.no === o.no - 1);
+  if (o.no > 1 && !prec) al.push("Le rapport n°" + (o.no - 1) + " de ce téléphone n'a pas été reçu.");
+  if (prec && prec.hashRecu !== o.precedent) al.push("Ce rapport ne suit pas le rapport n°" + prec.no + " reçu : le téléphone a peut-être été modifié.");
+  if (prec && o.seqDebut !== prec.seqFin + 1) al.push("Des opérations manquent entre ce rapport et le précédent.");
+  const seqs = o.ops.map((x) => x.seq).sort((a, b) => a - b);
+  for (let s = o.seqDebut, i = 0; s <= o.seqFin; s++, i++) { if (seqs[i] !== s) { al.push("Des opérations ont disparu de ce rapport."); break; } }
+  const autres = D.rapports.map((r) => r.o).filter((x) => x.point === o.point && x.appareil !== o.appareil && x.fin < o.fin);
+  if (o.no === 1 && autres.length) al.push("Nouveau téléphone ou téléphone réinitialisé pour ce point de vente.");
+  if (ecartTotal(o) < 0) al.push("Il manque " + fmt(-ecartTotal(o)) + " à la clôture.");
+  const annulees = o.ops.filter((x) => x.statut === "annulee").length;
+  if (annulees) al.push(annulees + " opération" + (annulees > 1 ? "s annulées" : " annulée") + " par le caissier.");
+  if (o.ops.some((x) => x.type === "ajustement")) al.push("Les soldes ont été corrigés avec le code du patron.");
+  return al;
+}
+function rendreDetailRapport() {
+  const o = RAPPORT_OUVERT, al = alertesRapport(o);
+  const parType = {};
+  valides(o.ops).forEach((x) => { const k = x.type === "mouvement" ? (x.sens === "entree" ? "Entrées" : "Sorties") : TYPES[x.type]; const p = parType[k] = parType[k] || { nb: 0, m: 0, f: 0 }; p.nb++; p.m += Number(x.montant) || 0; p.f += Number(x.frais) || 0; });
+  $("#vue").innerHTML = `
+    <section class="panneau"><div class="panneau-tete"><h2>${esc(D.noms[o.point])}</h2><button class="petit-btn" data-retour>Retour</button></div>
+      <div class="op-detail">${esc(o.caissier)}, rapport n°${o.no}, du ${dateHeure(o.debut)} au ${dateHeure(o.fin)}</div>
+      <p class="grand-chiffre">${fmt(o.frais)}</p><p class="aide">Bénéfice (frais encaissés)</p>
+      ${al.map((a) => `<p class="alerte">⚠ ${esc(a)}</p>`).join("")}
+      ${o.remarque ? `<p class="info">Remarque du caissier : ${esc(o.remarque)}</p>` : ""}
+    </section>
+    <section class="panneau"><h2>Soldes</h2><div class="defil"><table><thead><tr><th>Compte</th><th>Début</th><th>Calculé</th><th>Compté</th><th>Écart</th></tr></thead><tbody>
+      ${CLES.map((k) => `<tr><td>${COMPTES[k]}</td><td>${fmt(o.ouverture[k])}</td><td>${fmt(o.theorique[k])}</td><td>${fmt(o.compte[k])}</td><td class="${o.ecart[k] < 0 ? "neg-txt" : o.ecart[k] > 0 ? "pos-txt" : ""}">${fmt(o.ecart[k])}</td></tr>`).join("")}
+      <tr><td><b>Total</b></td><td></td><td></td><td></td><td class="${ecartTotal(o) < 0 ? "neg-txt" : ""}"><b>${fmt(ecartTotal(o))}</b></td></tr></tbody></table></div></section>
+    <section class="panneau"><h2>Résumé</h2>${Object.keys(parType).length ? `<div class="defil"><table><thead><tr><th>Type</th><th>Nombre</th><th>Montant</th><th>Frais</th></tr></thead><tbody>
+      ${Object.entries(parType).map(([k, v]) => `<tr><td>${k}</td><td>${v.nb}</td><td>${fmt(v.m)}</td><td>${fmt(v.f)}</td></tr>`).join("")}</tbody></table></div>` : `<p class="vide">Aucune opération.</p>`}</section>
+    <section class="panneau"><div class="panneau-tete"><h2>Toutes les opérations</h2><span>${o.ops.length}</span></div>
+      ${o.ops.length ? o.ops.slice().reverse().map((x) => ligneOp(x, "patron")).join("") : `<p class="vide">Aucune opération.</p>`}</section>`;
+  window.scrollTo(0, 0);
+}
+function importerRapport(texte) {
+  const { objet: o, hash } = deballer(texte);
+  if (o.type === "tarifs") throw new Error("Ce fichier contient des tarifs, pas un rapport.");
+  if (o.type === "sauvegarde") throw new Error("C'est une sauvegarde : utilisez Réglages, puis Restaurer une sauvegarde.");
+  if (o.type !== "rapport") throw new Error("Ce fichier n'est pas un rapport.");
+  if (D.rapports.some((r) => r.o.appareil === o.appareil && r.o.no === o.no)) { toast("Ce rapport a déjà été reçu."); return; }
+  o.hashRecu = hash; o.recuLe = Date.now();
+  D.rapports.push({ o });
+  if (!sauver()) { D.rapports.pop(); return; }
+  RAPPORT_OUVERT = o; ECRAN = "rapport"; rendre(); toast("Rapport reçu.");
+}
+function vueTarifs() {
+  return `<section class="panneau"><div class="panneau-tete"><h2>Grille des frais</h2></div>
+    <p class="aide">Modifiez puis enregistrez. Ensuite, touchez « Envoyer les tarifs aux caissiers » et envoyez le fichier à chaque caissier (Xender, Bluetooth). Ils l'ouvrent avec Menu, puis Recevoir les tarifs du patron.</p>
+    ${editeurTarifs()}
+    <button class="principal" id="t-enregistrer" type="button">Enregistrer les tarifs</button>
+    <button class="secondaire" type="button" data-envoyer-tarifs>Envoyer les tarifs aux caissiers</button></section>`;
+}
+function editeurTarifs() {
+  return `<div class="defil"><table class="tarifs"><thead><tr><th>De (Ar)</th><th>À (Ar)</th><th>Frais dépôt</th><th>Frais transfert</th><th>Vola alefa / retrait</th><th></th></tr></thead>
+    <tbody id="t-corps">${D.tarifs.map(ligneTarif).join("")}</tbody></table></div>
+    <button class="secondaire" id="t-ajouter" type="button">Ajouter une ligne</button>`;
+}
+function ligneTarif(t) {
+  return `<tr>${["min", "max", "depot", "transfert", "retrait"].map((k) => `<td><input inputmode="numeric" data-k="${k}" value="${Number(t[k]) || 0}"></td>`).join("")}<td><button class="petit-btn danger" data-suppr-ligne type="button" aria-label="Supprimer la ligne">×</button></td></tr>`;
+}
+function lireTarifs() {
+  const lignes = [...document.querySelectorAll("#t-corps tr")].map((tr) => { const o = {}; tr.querySelectorAll("input").forEach((i) => { o[i.dataset.k] = nombre(i.value); }); return o; })
+    .filter((l) => l.max > 0).sort((a, b) => a.min - b.min);
+  if (!lignes.length) { toast("La grille est vide.", true); return null; }
+  if (lignes.some((l) => l.min > l.max)) { toast("Une ligne a un « De » plus grand que son « À ».", true); return null; }
+  return lignes;
+}
+function vueReglages() {
+  return `<section class="panneau"><h2>Noms des points de vente</h2>
+      <label for="r-p1">Point de vente 1<input id="r-p1" value="${esc(D.noms.p1)}"></label>
+      <label for="r-p2">Point de vente 2<input id="r-p2" value="${esc(D.noms.p2)}"></label>
+      <button class="principal" id="r-noms" type="button">Enregistrer les noms</button></section>
+    <section class="panneau"><h2>Sauvegarde</h2>
+      <p class="aide">Si ce téléphone est perdu, tous les rapports sont perdus. Faites une sauvegarde chaque semaine et envoyez-la sur un autre appareil (WhatsApp, Bluetooth).</p>
+      <button class="principal" type="button" data-sauvegarde>Faire une sauvegarde</button>
+      <button class="secondaire" type="button" data-restaurer>Restaurer une sauvegarde</button>
+      <p class="aide">${D.rapports.length} rapports gardés sur ce téléphone, mémoire utilisée : ${memoire()}.</p>
+      <button class="secondaire" type="button" data-nettoyer>Effacer les rapports de plus de 3 mois</button></section>
+    <section class="panneau"><h2>Sécurité</h2>
+      <button class="secondaire" type="button" data-changer-code>Changer le code du patron</button>
+      <button class="secondaire" type="button" data-verrouiller>Verrouiller maintenant</button>
+      <button class="secondaire danger-btn" type="button" data-reset>Réinitialiser ce téléphone</button></section>`;
+}
+
+function memoire() {
+  let t = 0; try { t = (localStorage.getItem(STOCK) || "").length; } catch (e) {}
+  return Math.round(t / 1024) + " Ko sur environ 5 000 Ko";
+}
+
+/* ================= Soumissions de formulaires ================= */
+document.addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const f = ev.target;
+  if (f.id === "f-config") return enregistrerConfig(f);
+  if (f.id === "f-verrou") {
+    if (hashCode($("#v-code").value.trim(), D.sel) === D.codePatron) { DEVERROUILLE = true; rendre(); }
+    else toast("Code incorrect.", true);
+    return;
+  }
+  if (f.id === "f-op") {
+    const type = f.dataset.type, op = (f.querySelector("input[name=f-operateur]:checked") || {}).value;
+    const m = nombre($("#f-montant").value), mode = (f.querySelector("input[name=f-mode]:checked") || {}).value;
+    const c = calculOp(type, mode, m, mode === "intact" ? nombre($("#f-envoye").value) : 0), frais = c ? c.frais : null;
+    const reference = $("#f-ref").value.trim().toUpperCase(), tel = $("#f-tel").value.trim(), client = $("#f-nom").value.trim();
+    if (!op) return toast("Choisissez l'opérateur.", true);
+    if (!m) return toast("Tapez le montant.", true);
+    if (frais === null) return toast("Montant hors grille des tarifs.", true);
+    if (!reference) return toast("Tapez la référence de la transaction.", true);
+    if (!tel) return toast("Tapez le numéro du client.", true);
+    const deja = D.ops.concat(...D.rapports.slice(-10).map((r) => rapportDe(r).ops)).some((o) => o.reference === reference && o.operateur === op && o.statut !== "annulee");
+    if (deja) return toast("Cette référence est déjà enregistrée.", true);
+    if (type !== "retrait" && (c.envoye <= 0 || c.frais < 0)) return toast("Montant trop petit ou bénéfice négatif : vérifiez.", true);
+    const pb = type === "retrait" ? manque("especes", c.remis) : manque(op, c.envoye + c.fraisOrange);
+    if (pb) return toast(pb, true);
+    const data = { type, operateur: op, montant: m, frais, reference, tel };
+    if (type !== "retrait") Object.assign(data, { mode, paye: c.paye, envoye: c.envoye, fraisOrange: c.fraisOrange }); if (client) data.client = client;
+    if (nouvelleOp(data)) toast(TYPES[type] + " enregistré.");
+    return;
+  }
+  if (f.id === "f-echange") {
+    const de = $("#e-de").value, vers = $("#e-vers").value, m = nombre($("#e-montant").value), motif = $("#e-motif").value.trim();
+    if (de === vers) return toast("Choisissez deux comptes différents.", true);
+    if (!m) return toast("Tapez le montant.", true);
+    const pb = manque(de, m); if (pb) return toast(pb, true);
+    const data = { type: "echange", de, vers, montant: m, frais: 0 }; if (motif) data.motif = motif;
+    if (nouvelleOp(data)) toast("Échange enregistré.");
+    return;
+  }
+  if (f.id === "f-mouv") {
+    const sens = (f.querySelector("input[name=m-sens]:checked") || {}).value, compte = $("#m-compte").value, m = nombre($("#m-montant").value), motif = $("#m-motif").value.trim();
+    if (!sens) return toast("Choisissez entrée ou sortie.", true);
+    if (!m) return toast("Tapez le montant.", true);
+    if (!motif) return toast("Tapez le motif.", true);
+    if (sens === "sortie") { const pb = manque(compte, m); if (pb) return toast(pb, true); }
+    if (nouvelleOp({ type: "mouvement", sens, compte, montant: m, frais: 0, motif })) toast((sens === "entree" ? "Entrée" : "Sortie") + " enregistrée.");
+    return;
+  }
+  if (f.id === "f-annul") {
+    const motif = $("#a-motif").value.trim(); if (!motif) return toast("Tapez le motif.", true);
+    const op = D.ops.find((o) => o.seq === Number(f.dataset.seq)); if (!op) return;
+    op.statut = "annulee"; op.motifAnnulation = motif; op.annuleLe = Date.now();
+    if (sauver()) { fermer(); rendre(); toast("Opération annulée. Le patron le verra dans le rapport."); }
+    return;
+  }
+  if (f.id === "f-cloture") return cloturer();
+  if (f.id === "f-fixer") {
+    const s = soldesCaisse(), delta = {};
+    CLES.forEach((k) => { delta[k] = nombre($("#x-" + k).value) - Math.round(s[k]); });
+    if (nouvelleOp({ type: "ajustement", delta, montant: 0, frais: 0 })) toast("Soldes corrigés.");
+    return;
+  }
+  if (f.id === "f-nom-caissier") {
+    const n = $("#n-caissier").value.trim(); if (!n) return toast("Tapez un nom.", true);
+    D.caissier = n; if (sauver()) { fermer(); rendre(); toast("Nom enregistré."); }
+    return;
+  }
+  if (f.id === "f-nouveau-code") {
+    const c = $("#nc-1").value.trim();
+    if (c.length < 4) return toast("Le code doit avoir au moins 4 caractères.", true);
+    if (c !== $("#nc-2").value.trim()) return toast("Les deux codes ne sont pas identiques.", true);
+    D.codePatron = hashCode(c, D.sel); if (sauver()) { fermer(); toast("Code changé."); }
+    return;
+  }
+});
+
+/* ================= Clics ================= */
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("button"); if (!b) return;
+  const d = b.dataset;
+  if ("fermer" in d) return fermer();
+  if (d.config) return formConfig(d.config);
+  if (b.id === "btn-menu") {
+    if (D.role === "caisse") return menuCaisse();
+    ONGLET = "reglages"; ECRAN = "principal"; return rendre();
+  }
+  if ("retour" in d) { ECRAN = "principal"; RAPPORT_OUVERT = null; return rendre(); }
+  if (d.form) {
+    if (["depot", "transfert", "retrait"].includes(d.form)) return formOperateur(d.form);
+    if (d.form === "echange") return formEchange();
+    if (d.form === "mouvement") return formMouvement();
+    if (d.form === "cloture") return formCloture();
+  }
+  if (d.annuler) return formAnnuler(d.annuler);
+  if (d.renvoyer) return renvoyer(d.renvoyer);
+  if (d.ecran) { fermer(); ECRAN = d.ecran; return rendre(); }
+  if ("recevoirTarifs" in d) {
+    fermer();
+    return choisirFichier((t) => {
+      const { objet: o } = deballer(t);
+      if (o.type !== "tarifs") throw new Error("Ce fichier ne contient pas de tarifs.");
+      D.tarifs = o.lignes; D.tarifsDate = o.date;
+      if (sauver()) { rendre(); toast("Nouveaux tarifs installés."); }
+    });
+  }
+  if ("reglagesCaisse" in d) { fermer(); if (await demanderCodePatron()) reglagesCaisse(); return; }
+  if ("fixer" in d) return formFixer();
+  if ("tarifsCaisse" in d) {
+    return ouvrir(`${tete("Tarifs de ce téléphone")}${editeurTarifs()}<button class="principal" id="t-enregistrer" type="button">Enregistrer les tarifs</button>`);
+  }
+  if ("nomCaissier" in d) {
+    return ouvrir(`${tete("Nom du caissier")}<form id="f-nom-caissier" novalidate><label for="n-caissier">Nom<input id="n-caissier" value="${esc(D.caissier)}"></label><button class="principal" type="submit">Enregistrer</button></form>`);
+  }
+  if ("reset" in d) {
+    fermer();
+    if (!(await demanderCodePatron("Code du patron pour réinitialiser"))) return;
+    if (!(await demander("Toutes les données de ce téléphone seront effacées. Envoyez d'abord les rapports au patron. Continuer ?", "Tout effacer"))) return;
+    D = null; DEVERROUILLE = false; ECRAN = "principal"; return rendre();
+  }
+  if (d.onglet) { ONGLET = d.onglet; ECRAN = "principal"; return rendre(); }
+  if ("importer" in d) return choisirFichier(importerRapport);
+  if (d.rapport) {
+    const [app, no] = d.rapport.split(":");
+    RAPPORT_OUVERT = D.rapports.map((r) => r.o).find((o) => o.appareil === app && o.no === Number(no));
+    ECRAN = "rapport"; return rendre();
+  }
+  if (b.id === "t-ajouter") { $("#t-corps").insertAdjacentHTML("beforeend", ligneTarif({ min: 0, max: 0, depot: 0, transfert: 0, retrait: 0 })); return; }
+  if ("supprLigne" in d) { b.closest("tr").remove(); return; }
+  if (b.id === "t-enregistrer") {
+    const l = lireTarifs(); if (!l) return;
+    D.tarifs = l; D.tarifsDate = Date.now();
+    if (sauver()) { toast("Tarifs enregistrés."); if (D.role === "caisse") fermer(); rendre(); }
+    return;
+  }
+  if ("envoyerTarifs" in d) {
+    const l = lireTarifs(); if (!l) return;
+    D.tarifs = l; D.tarifsDate = D.tarifsDate || Date.now(); sauver();
+    return partager("CashPoint_Tarifs_" + jourDe() + ".txt", emballer({ type: "tarifs", v: VERSION, lignes: l, date: Date.now() }));
+  }
+  if (b.id === "r-noms") {
+    D.noms = { p1: $("#r-p1").value.trim() || "Point de vente 1", p2: $("#r-p2").value.trim() || "Point de vente 2" };
+    if (sauver()) toast("Noms enregistrés."); return;
+  }
+  if ("sauvegarde" in d) {
+    return partager("CashPoint_Sauvegarde_" + jourDe() + ".txt", emballer({ type: "sauvegarde", v: VERSION, rapports: D.rapports.map((r) => r.o), noms: D.noms, tarifs: D.tarifs, date: Date.now() }));
+  }
+  if ("restaurer" in d) {
+    return choisirFichier((t) => {
+      const { objet: o } = deballer(t);
+      if (o.type !== "sauvegarde") throw new Error("Ce fichier n'est pas une sauvegarde.");
+      let ajout = 0;
+      o.rapports.forEach((r) => { if (!D.rapports.some((x) => x.o.appareil === r.appareil && x.o.no === r.no)) { D.rapports.push({ o: r }); ajout++; } });
+      if (sauver()) { rendre(); toast(ajout + " rapport(s) restauré(s)."); }
+    });
+  }
+  if ("changerCode" in d) {
+    if (!(await demanderCodePatron("Code actuel du patron"))) return;
+    return ouvrir(`${tete("Nouveau code")}<form id="f-nouveau-code" novalidate>
+      <label for="nc-1">Nouveau code<input id="nc-1" type="password" inputmode="numeric" autocomplete="off"></label>
+      <label for="nc-2">Retaper le nouveau code<input id="nc-2" type="password" inputmode="numeric" autocomplete="off"></label>
+      <button class="principal" type="submit">Enregistrer</button></form>`);
+  }
+  if ("nettoyer" in d) {
+    const limite = Date.now() - 92 * 24 * 3600 * 1000, vieux = D.rapports.filter((r) => r.o.fin < limite).length;
+    if (!vieux) return toast("Aucun rapport de plus de 3 mois.");
+    if (!(await demander(vieux + " rapport(s) de plus de 3 mois seront effacés. Faites d'abord une sauvegarde. Continuer ?", "Effacer"))) return;
+    D.rapports = D.rapports.filter((r) => r.o.fin >= limite);
+    if (sauver()) { rendre(); toast("Anciens rapports effacés."); }
+    return;
+  }
+  if ("verrouiller" in d) { DEVERROUILLE = false; ECRAN = "principal"; return rendre(); }
+});
+document.addEventListener("change", (ev) => { if (ev.target.name === "f-operateur" || ev.target.name === "f-mode") majCalcul(); });
+
+/* ================= Démonstration ================= */
+let PHONES = {}, CUR = "caisse1";
+function demoNeuf() {
+  const sel = aleatoire(), code = hashCode("0000", sel), now = Date.now();
+  const base = (role) => ({ v: VERSION, grille: 2, role, sel, codePatron: code, appareil: aleatoire(), tarifs: JSON.parse(JSON.stringify(TARIFS_DEFAUT)), tarifsDate: 0, cree: now });
+  const caisse = (point, nomPoint, caissier, ouverture) => Object.assign(base("caisse"), { point, nomPoint, caissier, ouverture, debut: now - 3 * 3600e3, ops: [], seq: 0, seqDebut: 1, rapportNo: 0, dernierHash: "", rapports: [] });
+  PHONES = {
+    caisse1: caisse("p1", "Démo Analakely", "Rabe", { especes: 500000, mvola: 300000, orange: 200000, airtel: 100000 }),
+    caisse2: caisse("p2", "Démo Behoririka", "Soa", { especes: 400000, mvola: 250000, orange: 150000, airtel: 80000 }),
+    patron: Object.assign(base("patron"), { noms: { p1: "Démo Analakely", p2: "Démo Behoririka" }, rapports: [] })
+  };
+  const ajout = (k, type, operateur, m, mode, ref, tel, client, min) => {
+    D = PHONES[k]; const c = calculOp(type, mode, m, 0); D.seq += 1;
+    const o = { seq: D.seq, date: now - min * 60e3, statut: "valide", type, operateur, montant: m, frais: c.frais, reference: ref, tel, client };
+    if (type !== "retrait") Object.assign(o, { mode, paye: c.paye, envoye: c.envoye, fraisOrange: c.fraisOrange });
+    D.ops.push(o);
+  };
+  ajout("caisse1", "depot", "mvola", 10000, "plus", "DEMO-MV-001", "0340000001", "Rakoto", 150);
+  ajout("caisse1", "transfert", "orange", 5000, "deduit", "DEMO-OM-002", "0320000002", "Rasoa", 95);
+  ajout("caisse1", "retrait", "airtel", 20000, null, "DEMO-AT-003", "0330000003", "Rabe Jean", 40);
+  ajout("caisse2", "depot", "orange", 50000, "plus", "DEMO-OM-101", "0320000101", "Hery", 120);
+  ajout("caisse2", "retrait", "mvola", 10000, null, "DEMO-MV-102", "0340000102", "Lova", 30);
+  CUR = "caisse1"; D = PHONES.caisse1;
+}
+function demoBoutons() { document.querySelectorAll("[data-demo]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.demo === CUR))); }
+function demoPartager(contenu) {
+  let x; try { x = deballer(contenu); } catch (e) { return false; }
+  const o = x.objet;
+  if (o.type === "rapport") {
+    const P = PHONES.patron;
+    if (!P.rapports.some((r) => r.o.appareil === o.appareil && r.o.no === o.no)) { o.hashRecu = x.hash; o.recuLe = Date.now(); P.rapports.push({ o }); }
+    fermer(); toast("Démo : rapport envoyé au patron. Touchez « Patron » en haut pour le voir.");
+    return true;
+  }
+  if (o.type === "tarifs") {
+    ["caisse1", "caisse2"].forEach((k) => { if (PHONES[k]) { PHONES[k].tarifs = o.lignes; PHONES[k].tarifsDate = o.date; } });
+    toast("Démo : tarifs envoyés aux deux caissiers."); return true;
+  }
+  return false;
+}
+document.addEventListener("click", async (ev) => {
+  const b = ev.target.closest("[data-demo], [data-demo-quitter]"); if (!b) return;
+  if (b.dataset.demo) {
+    PHONES[CUR] = D; CUR = b.dataset.demo; D = PHONES[CUR] || null;
+    DEVERROUILLE = false; ECRAN = "principal"; RAPPORT_OUVERT = null; fermer(); demoBoutons(); rendre(); window.scrollTo(0, 0);
+    return;
+  }
+  if (await demander("Quitter la démo ? Toutes les données de test seront effacées.", "Quitter et tout effacer")) {
+    demoNeuf(); DEVERROUILLE = false; ECRAN = "principal"; RAPPORT_OUVERT = null; demoBoutons(); rendre(); window.scrollTo(0, 0);
+    toast("Démo remise à zéro.");
+  }
+});
+demoNeuf();
+rendre();
+</script>
+</body>
+</html>
